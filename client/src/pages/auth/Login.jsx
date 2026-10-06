@@ -4,18 +4,8 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import AuthLayout from '../../components/AuthLayout'
 import { Spinner } from '../../components/ui'
+import GoogleButton from '../../components/GoogleButton'
 import API from '../../api'
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.96 10.96 0 0 0 12 1 11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z" />
-    </svg>
-  )
-}
 
 function AppleIcon() {
   return (
@@ -90,7 +80,7 @@ export default function Login() {
         <div>
           <div className="mb-1.5 flex items-center justify-between">
             <label htmlFor="password" className="text-[13px] font-medium text-ink">Password</label>
-            <a href="#" className="text-[13px] font-medium text-accent-text hover:underline underline-offset-4">Forgot password?</a>
+            <Link to="/forgot-password" className="text-[13px] font-medium text-accent-text hover:underline underline-offset-4">Forgot password?</Link>
           </div>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" strokeWidth={1.75} />
@@ -132,9 +122,7 @@ export default function Login() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <button type="button" className="btn btn-secondary">
-          <GoogleIcon /> Google
-        </button>
+        <GoogleButton onError={setError} />
         <button type="button" className="btn btn-secondary">
           <AppleIcon /> Apple
         </button>

@@ -4,7 +4,11 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    phone: { type: String, required: true },
+    // Accounts created through Google sign-in have no phone number yet
+    phone: { type: String, required: function () { return !this.googleId } },
+    googleId: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
     role: {
         type: String,
         enum: ['rider', 'driver', 'ops_manager', 'super_admin'],

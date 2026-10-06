@@ -5,6 +5,9 @@ import LandingPage from './pages/LandingPage'
 import Login from './pages/auth/Login'
 import RegisterRider from './pages/auth/RegisterRider'
 import RegisterDriver from './pages/auth/RegisterDriver'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
+import { Privacy, Terms } from './pages/Legal'
 
 import RiderDashboard from './pages/rider/Dashboard'
 import RiderActivity from './pages/rider/Activity'
@@ -39,6 +42,10 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register/rider" element={<RegisterRider />} />
         <Route path="/register/driver" element={<RegisterDriver />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
 
         <Route path="/rider/dashboard" element={<ProtectedRoute roles={['rider']}><RiderDashboard /></ProtectedRoute>} />
         <Route path="/rider/activity" element={<ProtectedRoute roles={['rider']}><RiderActivity /></ProtectedRoute>} />

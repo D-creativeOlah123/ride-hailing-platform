@@ -42,8 +42,8 @@ export default function AuthLayout({ title, subtitle, children, footer, width = 
         <div className="mx-auto flex max-w-content flex-col items-center gap-3 px-4 py-5 text-xs text-ink-subtle sm:flex-row sm:justify-between sm:px-6 lg:px-8">
           <p>© {new Date().getFullYear()} RideLink. Precision in Motion.</p>
           <nav className="flex gap-5" aria-label="Footer">
-            <a href="#" className="hover:text-ink">Privacy Policy</a>
-            <a href="#" className="hover:text-ink">Terms of Service</a>
+            <a href="/privacy" className="hover:text-ink">Privacy Policy</a>
+            <a href="/terms" className="hover:text-ink">Terms of Service</a>
             <a href="#" className="hover:text-ink">Support</a>
           </nav>
         </div>

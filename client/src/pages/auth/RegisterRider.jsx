@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { User, Mail, Phone, Lock, AlertCircle } from 'lucide-react'
 import AuthLayout from '../../components/AuthLayout'
 import { Spinner } from '../../components/ui'
+import GoogleButton from '../../components/GoogleButton'
 import API from '../../api'
 
 const iconClass = 'pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle'
@@ -155,6 +156,14 @@ export default function RegisterRider() {
           {loading ? <><Spinner /> Creating Account...</> : 'Create Account'}
         </button>
       </form>
+
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-line" />
+        <span className="eyebrow">Or</span>
+        <div className="h-px flex-1 bg-line" />
+      </div>
+
+      <GoogleButton label="Sign up with Google" onError={setError} className="w-full" />
     </AuthLayout>
   )
 }
