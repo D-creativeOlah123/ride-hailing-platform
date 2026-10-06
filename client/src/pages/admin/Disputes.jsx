@@ -1,8 +1,25 @@
 import { useState, useEffect } from 'react'
-import Sidebar from '../../components/Sidebar'
-import ThemeToggle from '../../components/ThemeToggle'
+import {
+  Search, ChevronDown, Download, Flag, X, Check, ArrowUpRight, CheckCircle2, CalendarDays,
+} from 'lucide-react'
+import AppShell from '../../components/AppShell'
+import { StatusBadge, SectionHeader, EmptyState, Skeleton, Spinner, Avatar } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
 import API from '../../api'
+
+// Full class names so Tailwind can find them.
+const ACTION_BTN = {
+  review: 'btn btn-sm btn-secondary',
+  escalate: 'btn btn-sm border border-warning/25 bg-warning/10 text-warning hover:bg-warning/15',
+  resolve: 'btn btn-sm border border-success/25 bg-success/10 text-success hover:bg-success/15',
+}
+
+const DOT = {
+  open: 'bg-warning',
+  under_review: 'bg-accent',
+  escalated: 'bg-danger',
+  resolved: 'bg-success',
+}
 
 export default function AdminDisputes() {
   const { user } = useAuth()
@@ -62,13 +79,6 @@ export default function AdminDisputes() {
     }
   }
 
-  const statusColor = (status) => {
-    if (status === 'resolved') return 'bg-green-500/10 text-green-500'
-    if (status === 'escalated') return 'bg-red-500/10 text-red-500'
-    if (status === 'under_review') return 'bg-yellow-500/10 text-yellow-500'
-    return 'bg-brand-blue/10 text-brand-blue'
-  }
-
   const filtered = disputes.filter(d => {
     const matchSearch = d.submittedBy?.name?.toLowerCase().includes(search.toLowerCase()) ||
       d._id.toLowerCase().includes(search.toLowerCase())
@@ -76,273 +86,317 @@ export default function AdminDisputes() {
     return matchSearch && matchStatus
   })
 
+  // Row-level action buttons, shared by the phone list and the table.
+  const rowActions = (d) => (
+    <>
+      {d.status === 'open' && (
+        <button
+          onClick={e => { e.stopPropagation(); handleReview(d._id) }}
+          className={ACTION_BTN.review}>
+          Review
+        </button>
+      )}
+      {d.status === 'under_review' && user?.role === 'ops_manager' && (
+        <button
+          onClick={e => { e.stopPropagation(); handleEscalate(d._id) }}
+          className={ACTION_BTN.escalate}>
+          Escalate
+        </button>
+      )}
+      {(d.status === 'escalated' || d.status === 'under_review') && user?.role === 'super_admin' && (
+        <button
+          onClick={e => { e.stopPropagation(); setSelected(d) }}
+          className={ACTION_BTN.resolve}>
+          Resolve
+        </button>
+      )}
+    </>
+  )
+
+  const summary = [
+    { key: 'open', label: 'Open', value: disputes.filter(d => d.status === 'open').length },
+    { key: 'under_review', label: 'Under Review', value: disputes.filter(d => d.status === 'under_review').length },
+    { key: 'escalated', label: 'Escalated', value: disputes.filter(d => d.status === 'escalated').length },
+    { key: 'resolved', label: 'Resolved', value: disputes.filter(d => d.status === 'resolved').length },
+  ]
+
   return (
-    <div className="flex min-h-screen bg-white dark:bg-navy-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
+    <AppShell
+      title="Dispute Management"
+      subtitle="Review and resolve active ride discrepancies."
+      actions={
+        <button className="btn btn-primary">
+          <Download className="h-4 w-4" strokeWidth={1.75} /> Export Report
+        </button>
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
 
-        <header className="px-8 py-4 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dispute Management</h1>
-            <p className="text-xs text-gray-500 dark:text-white/40">Review and resolve active ride discrepancies.</p>
+        {/* Disputes list */}
+        <div className="min-w-0 space-y-4 xl:col-span-2">
+
+          {/* Filters */}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" strokeWidth={1.75} />
+              <label htmlFor="dispute-search" className="sr-only">Search disputes</label>
+              <input
+                id="dispute-search"
+                type="text"
+                placeholder="Search Trip ID or User..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="input h-10 pl-10"
+              />
+            </div>
+            <div className="relative sm:w-48">
+              <label htmlFor="dispute-status" className="sr-only">Filter by status</label>
+              <select
+                id="dispute-status"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="input h-10">
+                <option value="all">Status: All</option>
+                <option value="open">Open</option>
+                <option value="under_review">Under Review</option>
+                <option value="escalated">Escalated</option>
+                <option value="resolved">Resolved</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" strokeWidth={1.75} />
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <button className="flex items-center gap-2 bg-brand-blue hover:bg-brand-blue-hover text-white text-sm px-4 py-2 rounded-xl transition-all">
-              ↑ Export Report
-            </button>
-          </div>
-        </header>
 
-        <main className="flex-1 p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            {/* Disputes list */}
-            <div className="lg:col-span-2 space-y-4">
-
-              {/* Filters */}
-              <div className="flex gap-3">
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
-                  <input
-                    type="text"
-                    placeholder="Search Trip ID or User..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-navy-800 border border-gray-200 dark:border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-brand-blue transition-colors"
-                  />
-                </div>
-                <select
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
-                  className="bg-gray-50 dark:bg-navy-800 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-brand-blue transition-colors">
-                  <option value="all">Status: All</option>
-                  <option value="open">Open</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="escalated">Escalated</option>
-                  <option value="resolved">Resolved</option>
-                </select>
+          {/* Table */}
+          <div className="card overflow-hidden">
+            {loading ? (
+              <div className="space-y-2 p-4 sm:p-5">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-12" />)}
               </div>
+            ) : filtered.length === 0 ? (
+              <EmptyState icon={Flag} title="No disputes found." />
+            ) : (
+              <>
+                {/* Phones: stacked list */}
+                <ul className="divide-y divide-line md:hidden">
+                  {filtered.map(d => (
+                    <li
+                      key={d._id}
+                      onClick={() => setSelected(d)}
+                      className={`cursor-pointer px-4 py-3.5 transition-colors hover:bg-surface-2/60 ${selected?._id === d._id ? 'bg-surface-2/60' : ''}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="truncate text-sm font-medium text-accent-text tabular-nums">
+                          #RL-{d._id.slice(-8).toUpperCase()}
+                        </span>
+                        <StatusBadge status={d.status} className="shrink-0" />
+                      </div>
+                      <div className="mt-2.5 flex items-center gap-2.5">
+                        <Avatar name={d.submittedBy?.name} className="h-7 w-7 text-2xs" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm text-ink">{d.submittedBy?.name}</p>
+                          <p className="truncate text-xs capitalize text-ink-subtle">
+                            {d.submittedBy?.role} · <span className="tabular-nums">{new Date(d.createdAt).toLocaleDateString()}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2 empty:hidden">{rowActions(d)}</div>
+                    </li>
+                  ))}
+                </ul>
 
-              {/* Table */}
-              <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-white/5">
-                      <th className="text-left px-6 py-4 text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider">Trip ID</th>
-                      <th className="text-left px-6 py-4 text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider">Submitted By</th>
-                      <th className="text-left px-6 py-4 text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-6 py-4 text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider">Date</th>
-                      <th className="text-left px-6 py-4 text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      [1,2,3].map(i => (
-                        <tr key={i}>
-                          <td colSpan={5} className="px-6 py-4">
-                            <div className="h-8 bg-gray-200 dark:bg-navy-700 rounded animate-pulse"></div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : filtered.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-white/40 text-sm">
-                          No disputes found.
-                        </td>
+                {/* md and up: table */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead>
+                      <tr className="table-head">
+                        <th className="px-5 py-2.5 font-medium">Trip ID</th>
+                        <th className="px-5 py-2.5 font-medium">Submitted By</th>
+                        <th className="px-5 py-2.5 font-medium">Status</th>
+                        <th className="px-5 py-2.5 font-medium">Date</th>
+                        <th className="px-5 py-2.5 font-medium">Actions</th>
                       </tr>
-                    ) : (
-                      filtered.map(d => (
+                    </thead>
+                    <tbody>
+                      {filtered.map(d => (
                         <tr key={d._id}
-                          className="border-t border-gray-200 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-navy-700 transition-colors cursor-pointer"
+                          className={`table-row cursor-pointer ${selected?._id === d._id ? 'bg-surface-2/60' : ''}`}
                           onClick={() => setSelected(d)}>
-                          <td className="px-6 py-4 text-sm text-brand-blue font-medium">
+                          <td className="whitespace-nowrap px-5 py-3 font-medium text-accent-text tabular-nums">
                             #RL-{d._id.slice(-8).toUpperCase()}
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-brand-blue flex items-center justify-center text-white text-xs font-bold">
-                                {d.submittedBy?.name?.charAt(0)}
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-900 dark:text-white">{d.submittedBy?.name}</p>
-                                <p className="text-xs text-gray-500 dark:text-white/40 capitalize">{d.submittedBy?.role}</p>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <Avatar name={d.submittedBy?.name} className="h-7 w-7 text-2xs" />
+                              <div className="min-w-0">
+                                <p className="truncate text-sm text-ink">{d.submittedBy?.name}</p>
+                                <p className="text-xs capitalize text-ink-subtle">{d.submittedBy?.role}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium uppercase ${statusColor(d.status)}`}>
-                              {d.status.replace('_', ' ')}
-                            </span>
+                          <td className="px-5 py-3">
+                            <StatusBadge status={d.status} />
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-white/40">
+                          <td className="whitespace-nowrap px-5 py-3 text-ink-muted tabular-nums">
                             {new Date(d.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex gap-2">
-                              {d.status === 'open' && (
-                                <button
-                                  onClick={e => { e.stopPropagation(); handleReview(d._id) }}
-                                  className="text-xs bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/20 px-3 py-1.5 rounded-lg transition-all">
-                                  Review
-                                </button>
-                              )}
-                              {d.status === 'under_review' && user?.role === 'ops_manager' && (
-                                <button
-                                  onClick={e => { e.stopPropagation(); handleEscalate(d._id) }}
-                                  className="text-xs bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 px-3 py-1.5 rounded-lg transition-all">
-                                  Escalate
-                                </button>
-                              )}
-                              {(d.status === 'escalated' || d.status === 'under_review') && user?.role === 'super_admin' && (
-                                <button
-                                  onClick={e => { e.stopPropagation(); setSelected(d) }}
-                                  className="text-xs bg-green-500/10 text-green-500 hover:bg-green-500/20 px-3 py-1.5 rounded-lg transition-all">
-                                  Resolve
-                                </button>
-                              )}
-                            </div>
+                          <td className="px-5 py-3">
+                            <div className="flex gap-2">{rowActions(d)}</div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-
-                {filtered.length > 0 && (
-                  <div className="px-6 py-4 border-t border-gray-200 dark:border-white/5 flex items-center justify-between">
-                    <p className="text-xs text-gray-500 dark:text-white/40">
-                      Showing {filtered.length} of {disputes.length} disputes
-                    </p>
-                    <div className="flex gap-2">
-                      <button className="w-8 h-8 bg-brand-blue text-white text-xs rounded-lg">1</button>
-                      <button className="w-8 h-8 bg-gray-100 dark:bg-navy-700 text-gray-500 dark:text-white/40 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-navy-600">2</button>
-                      <button className="w-8 h-8 bg-gray-100 dark:bg-navy-700 text-gray-500 dark:text-white/40 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-navy-600">3</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right panel — dispute detail */}
-            <div className="space-y-4">
-              {selected ? (
-                <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">
-                        Dispute #{selected._id.slice(-8).toUpperCase()}
-                      </p>
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium uppercase mt-1 inline-block ${statusColor(selected.status)}`}>
-                        {selected.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-lg">✕</button>
-                  </div>
-
-                  <div className="space-y-4 mb-5">
-                    <div className="bg-white dark:bg-navy-700 rounded-xl p-4 border border-gray-200 dark:border-white/5">
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2">Submitted By</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-brand-blue flex items-center justify-center text-white text-xs font-bold">
-                          {selected.submittedBy?.name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{selected.submittedBy?.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-white/40 capitalize">{selected.submittedBy?.role}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-navy-700 rounded-xl p-4 border border-gray-200 dark:border-white/5">
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2">Description</p>
-                      <p className="text-sm text-gray-700 dark:text-white/70">{selected.description}</p>
-                    </div>
-
-                    <div className="bg-white dark:bg-navy-700 rounded-xl p-4 border border-gray-200 dark:border-white/5">
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2">Trip Details</p>
-                      <p className="text-xs text-gray-500 dark:text-white/40">
-                        Filed on {new Date(selected.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="space-y-3">
-                    {selected.status === 'open' && (
-                      <button
-                        onClick={() => handleReview(selected._id)}
-                        className="w-full bg-brand-blue hover:bg-brand-blue-hover text-white py-3 rounded-xl text-sm font-medium transition-all">
-                        Mark as Under Review
-                      </button>
-                    )}
-
-                    {selected.status === 'under_review' && user?.role === 'ops_manager' && (
-                      <button
-                        onClick={() => handleEscalate(selected._id)}
-                        className="w-full bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 py-3 rounded-xl text-sm font-medium transition-all">
-                        Escalate to Super Admin
-                      </button>
-                    )}
-
-                    {(selected.status === 'escalated' || selected.status === 'under_review') && user?.role === 'super_admin' && (
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2">Resolution</p>
-                          <textarea
-                            placeholder="Type the resolution details here..."
-                            value={resolution}
-                            onChange={e => setResolution(e.target.value)}
-                            rows={4}
-                            className="w-full bg-white dark:bg-navy-700 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-brand-blue transition-colors resize-none"
-                          />
-                        </div>
-                        <button
-                          onClick={() => handleResolve(selected._id)}
-                          disabled={processing || !resolution}
-                          className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-3 rounded-xl text-sm font-medium transition-all">
-                          {processing ? 'Resolving...' : 'Confirm Resolution ✓'}
-                        </button>
-                      </div>
-                    )}
-
-                    {selected.status === 'resolved' && (
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
-                        <p className="text-xs text-green-500 uppercase tracking-wider mb-1">Resolution</p>
-                        <p className="text-sm text-green-500">{selected.resolution}</p>
-                      </div>
-                    )}
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ) : (
-                <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-8 border border-gray-200 dark:border-white/5 text-center">
-                  <div className="text-4xl mb-3">⚑</div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Select a Dispute</p>
-                  <p className="text-xs text-gray-500 dark:text-white/40">Click any dispute from the table to view details and take action.</p>
-                </div>
-              )}
+              </>
+            )}
 
-              {/* Stats summary */}
-              <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Summary</h3>
-                <div className="space-y-3">
-                  {[
-                    { label: 'Open', value: disputes.filter(d => d.status === 'open').length, color: 'text-brand-blue' },
-                    { label: 'Under Review', value: disputes.filter(d => d.status === 'under_review').length, color: 'text-yellow-500' },
-                    { label: 'Escalated', value: disputes.filter(d => d.status === 'escalated').length, color: 'text-red-500' },
-                    { label: 'Resolved', value: disputes.filter(d => d.status === 'resolved').length, color: 'text-green-500' },
-                  ].map(s => (
-                    <div key={s.label} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500 dark:text-white/40">{s.label}</span>
-                      <span className={`text-sm font-bold ${s.color}`}>{s.value}</span>
-                    </div>
-                  ))}
+            {filtered.length > 0 && (
+              <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
+                <p className="text-xs text-ink-subtle tabular-nums">
+                  Showing {filtered.length} of {disputes.length} disputes
+                </p>
+                <div className="flex gap-1">
+                  <button className="btn btn-primary btn-sm btn-icon tabular-nums" aria-current="page">1</button>
+                  <button className="btn btn-ghost btn-sm btn-icon tabular-nums">2</button>
+                  <button className="btn btn-ghost btn-sm btn-icon tabular-nums">3</button>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        </main>
+        </div>
+
+        {/* Right panel — dispute detail */}
+        <div className="min-w-0 space-y-6">
+          {selected ? (
+            // Below xl this is a modal sheet; on xl it sits inline in the right column.
+            <div
+              className="fixed inset-0 z-[60] flex animate-fade-in items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center xl:static xl:z-auto xl:block xl:animate-none xl:bg-transparent xl:p-0 xl:backdrop-blur-none"
+              onClick={e => { if (e.target === e.currentTarget) setSelected(null) }}
+            >
+              <div
+                role="dialog"
+                aria-labelledby="dispute-detail-title"
+                className="card max-h-[90vh] w-full max-w-md overflow-y-auto shadow-overlay xl:max-h-none xl:max-w-none xl:overflow-visible xl:shadow-card"
+              >
+                <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
+                  <div className="min-w-0">
+                    <p id="dispute-detail-title" className="truncate text-[15px] font-semibold text-ink tabular-nums">
+                      Dispute #{selected._id.slice(-8).toUpperCase()}
+                    </p>
+                    <StatusBadge status={selected.status} className="mt-1.5" />
+                  </div>
+                  <button onClick={() => setSelected(null)} className="btn btn-ghost btn-icon btn-sm -mr-1.5 shrink-0" aria-label="Close">
+                    <X className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
+                </div>
+
+                <div className="space-y-5 px-5 py-5">
+                  <div>
+                    <p className="eyebrow mb-2">Submitted By</p>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={selected.submittedBy?.name} />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-ink">{selected.submittedBy?.name}</p>
+                        <p className="text-xs capitalize text-ink-subtle">{selected.submittedBy?.role}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="eyebrow mb-2">Description</p>
+                    <p className="well whitespace-pre-wrap break-words px-3.5 py-3 text-sm text-ink-muted">{selected.description}</p>
+                  </div>
+
+                  <div>
+                    <p className="eyebrow mb-2">Trip Details</p>
+                    <p className="flex items-center gap-2 text-xs text-ink-muted">
+                      <CalendarDays className="h-3.5 w-3.5 text-ink-subtle" strokeWidth={1.75} />
+                      Filed on {new Date(selected.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="space-y-3 border-t border-line px-5 py-4 empty:hidden">
+                  {selected.status === 'open' && (
+                    <button
+                      onClick={() => handleReview(selected._id)}
+                      className="btn btn-primary w-full">
+                      Mark as Under Review
+                    </button>
+                  )}
+
+                  {selected.status === 'under_review' && user?.role === 'ops_manager' && (
+                    <button
+                      onClick={() => handleEscalate(selected._id)}
+                      className="btn w-full border border-warning/25 bg-warning/10 text-warning hover:bg-warning/15">
+                      <ArrowUpRight className="h-4 w-4" strokeWidth={1.75} /> Escalate to Super Admin
+                    </button>
+                  )}
+
+                  {(selected.status === 'escalated' || selected.status === 'under_review') && user?.role === 'super_admin' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label htmlFor="dispute-resolution" className="label">Resolution</label>
+                        <textarea
+                          id="dispute-resolution"
+                          placeholder="Type the resolution details here..."
+                          value={resolution}
+                          onChange={e => setResolution(e.target.value)}
+                          rows={4}
+                          className="input resize-none"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleResolve(selected._id)}
+                        disabled={processing || !resolution}
+                        className="btn btn-primary w-full">
+                        {processing
+                          ? <><Spinner /> Resolving...</>
+                          : <><Check className="h-4 w-4" strokeWidth={2} /> Confirm Resolution</>}
+                      </button>
+                    </div>
+                  )}
+
+                  {selected.status === 'resolved' && (
+                    <div className="alert alert-success">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium uppercase tracking-eyebrow">Resolution</p>
+                        <p className="mt-0.5 break-words">{selected.resolution}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="card">
+              <EmptyState
+                icon={Flag}
+                title="Select a Dispute"
+                description="Click any dispute from the table to view details and take action."
+              />
+            </div>
+          )}
+
+          {/* Stats summary */}
+          <section className="card">
+            <SectionHeader className="px-5 pt-5" title="Summary" />
+            <ul className="mt-3 divide-y divide-line border-t border-line">
+              {summary.map(s => (
+                <li key={s.label} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <span className="flex items-center gap-2.5 text-sm text-ink-muted">
+                    <span className={`h-1.5 w-1.5 rounded-full ${DOT[s.key]}`} />
+                    {s.label}
+                  </span>
+                  <span className="text-sm font-semibold text-ink tabular-nums">{s.value}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import Sidebar from '../../components/Sidebar'
-import ThemeToggle from '../../components/ThemeToggle'
+import { CheckCircle2, Flag, CalendarDays } from 'lucide-react'
+import AppShell from '../../components/AppShell'
+import { StatusBadge, EmptyState, Skeleton } from '../../components/ui'
 import API from '../../api'
 
 export default function DriverDisputes() {
@@ -22,68 +23,62 @@ export default function DriverDisputes() {
     }
   }
 
-  const statusColor = (status) => {
-    if (status === 'resolved') return 'bg-green-500/10 text-green-500'
-    if (status === 'escalated') return 'bg-red-500/10 text-red-500'
-    if (status === 'under_review') return 'bg-yellow-500/10 text-yellow-500'
-    return 'bg-brand-blue/10 text-brand-blue'
-  }
-
   return (
-    <div className="flex min-h-screen bg-white dark:bg-navy-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <header className="px-8 py-4 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Dispute Resolution</h1>
-            <p className="text-xs text-gray-500 dark:text-white/40">Monitor your active cases and review past resolutions.</p>
+    <AppShell
+      title="Dispute Resolution"
+      subtitle="Monitor your active cases and review past resolutions."
+    >
+      <div className="max-w-3xl">
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
           </div>
-          <ThemeToggle />
-        </header>
-
-        <main className="flex-1 p-8 max-w-3xl">
-          {loading ? (
-            <div className="space-y-4">
-              {[1,2,3].map(i => (
-                <div key={i} className="h-24 bg-gray-100 dark:bg-navy-800 rounded-2xl animate-pulse"></div>
-              ))}
-            </div>
-          ) : disputes.length === 0 ? (
-            <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-12 border border-gray-200 dark:border-white/5 text-center">
-              <div className="text-5xl mb-4">✅</div>
-              <p className="text-gray-900 dark:text-white font-semibold mb-2">No Disputes</p>
-              <p className="text-gray-500 dark:text-white/40 text-sm">You have no active or past disputes.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {disputes.map(d => (
-                <div key={d._id} className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+        ) : disputes.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={CheckCircle2}
+              title="No Disputes"
+              description="You have no active or past disputes."
+            />
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {disputes.map(d => (
+              <li key={d._id} className="card card-pad">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted">
+                      <Flag className="h-4 w-4" strokeWidth={1.75} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink tabular-nums">
                         TRP-{d._id.slice(-7).toUpperCase()}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-white/40 mt-1">
-                        Filed {new Date(d.createdAt).toLocaleDateString()}
+                      <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-subtle">
+                        <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        <span className="tabular-nums">Filed {new Date(d.createdAt).toLocaleDateString()}</span>
                       </p>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium uppercase ${statusColor(d.status)}`}>
-                      {d.status.replace('_', ' ')}
-                    </span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-white/60">{d.description}</p>
-                  {d.resolution && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/5">
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Resolution</p>
-                      <p className="text-sm text-green-500">{d.resolution}</p>
-                    </div>
-                  )}
+                  <StatusBadge status={d.status} className="shrink-0" />
                 </div>
-              ))}
-            </div>
-          )}
-        </main>
+
+                <p className="mt-4 whitespace-pre-wrap break-words text-sm text-ink-muted">{d.description}</p>
+
+                {d.resolution && (
+                  <div className="alert alert-success mt-4">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-eyebrow">Resolution</p>
+                      <p className="mt-0.5 break-words">{d.resolution}</p>
+                    </div>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </div>
+    </AppShell>
   )
 }

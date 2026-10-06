@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Sidebar from '../../components/Sidebar'
-import ThemeToggle from '../../components/ThemeToggle'
+import { CarFront, TrendingUp, Flag } from 'lucide-react'
+import AppShell from '../../components/AppShell'
+import { StatusBadge, SectionHeader, EmptyState, Skeleton } from '../../components/ui'
 import API from '../../api'
 
 export default function RiderActivity() {
@@ -35,139 +36,125 @@ export default function RiderActivity() {
     .filter(t => t.status === 'completed')
     .reduce((sum, t) => sum + (t.fare || 0), 0)
 
-  const statusColor = (status) => {
-    if (status === 'completed') return 'bg-green-500/10 text-green-500'
-    if (status === 'cancelled') return 'bg-red-500/10 text-red-500'
-    return 'bg-yellow-500/10 text-yellow-500'
-  }
+  const filterControl = (
+    <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-surface-2 p-1" role="tablist" aria-label="Filter trips">
+      {['all', 'completed', 'cancelled'].map(f => (
+        <button key={f}
+          type="button"
+          role="tab"
+          aria-selected={filter === f}
+          onClick={() => setFilter(f)}
+          className={`h-8 shrink-0 rounded-md px-3 text-[13px] font-medium capitalize transition-colors ${
+            filter === f
+              ? 'bg-surface text-ink shadow-xs ring-1 ring-line'
+              : 'text-ink-muted hover:text-ink'
+          }`}>
+          {f}
+        </button>
+      ))}
+    </div>
+  )
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-navy-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <header className="px-8 py-4 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Trip History</h1>
-            <p className="text-xs text-gray-500 dark:text-white/40">Review and manage your past executive journeys.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <div className="flex bg-gray-100 dark:bg-navy-800 rounded-xl p-1">
-              {['all', 'completed', 'cancelled'].map(f => (
-                <button key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all capitalize ${
-                    filter === f
-                      ? 'bg-white dark:bg-navy-700 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-500 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/60'
-                  }`}>
-                  {f}
-                </button>
+    <AppShell
+      title="Trip History"
+      subtitle="Review and manage your past executive journeys."
+      actions={filterControl}
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Trips */}
+        <div className="min-w-0 lg:col-span-2">
+          {loading ? (
+            <div className="card space-y-2 p-5 sm:p-6">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-24" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="card">
+              <EmptyState icon={CarFront} title="No trips found." />
+            </div>
+          ) : (
+            <ul className="card divide-y divide-line overflow-hidden">
+              {filtered.map(trip => (
+                <li key={trip._id} className="px-5 py-4 transition-colors hover:bg-surface-2/50 sm:px-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 truncate text-xs text-ink-subtle tabular-nums">
+                      {new Date(trip.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} •{' '}
+                      {new Date(trip.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                    <StatusBadge status={trip.status} className="shrink-0" />
+                  </div>
+
+                  <div className="relative mt-3 space-y-2.5">
+                    <span className="pointer-events-none absolute left-[3.5px] top-[10px] h-[calc(100%-20px)] w-px bg-line-strong" aria-hidden="true" />
+                    <div className="relative flex min-w-0 items-center gap-3">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-accent ring-4 ring-accent/15" />
+                      <span className="eyebrow w-14 shrink-0">Pickup</span>
+                      <p className="min-w-0 truncate text-sm text-ink">{trip.pickupLocation}</p>
+                    </div>
+                    <div className="relative flex min-w-0 items-center gap-3">
+                      <span className="h-2 w-2 shrink-0 rounded-[2px] bg-ink" />
+                      <span className="eyebrow w-14 shrink-0">Dropoff</span>
+                      <p className="min-w-0 truncate text-sm text-ink">{trip.destination}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <span className="text-[15px] font-semibold text-ink tabular-nums">
+                      {trip.fare ? `₦${trip.fare}` : '—'}
+                    </span>
+                    {trip.status === 'completed' && (
+                      <button
+                        type="button"
+                        onClick={() => navigate('/rider/disputes')}
+                        className="btn btn-secondary btn-sm">
+                        <Flag className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        Dispute
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Spend summary */}
+        <div className="min-w-0 space-y-6">
+          <section className="card card-pad">
+            <p className="eyebrow">Total Spend</p>
+            <p className="stat-value mt-3">₦{totalSpend.toLocaleString()}</p>
+            <p className="mt-2 flex items-center gap-1 text-xs text-success">
+              <TrendingUp className="h-3.5 w-3.5" strokeWidth={1.75} />
+              12% increase this month
+            </p>
+            <div className="mt-5 flex h-16 items-end gap-2 border-t border-line pt-4" aria-hidden="true">
+              {[40, 65, 45, 80, 55, 90].map((h, i) => (
+                <div key={i} className="flex flex-1 flex-col justify-end overflow-hidden rounded-[3px] bg-accent/15" style={{ height: `${h * 0.6}px` }}>
+                  <div className="w-full bg-accent" style={{ height: `${h * 0.3}px` }} />
+                </div>
               ))}
             </div>
-          </div>
-        </header>
+          </section>
 
-        <main className="flex-1 p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
-              {loading ? (
-                <div className="space-y-4">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="h-28 bg-gray-100 dark:bg-navy-800 rounded-2xl animate-pulse"></div>
-                  ))}
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-12 border border-gray-200 dark:border-white/5 text-center">
-                  <div className="text-5xl mb-4">🚗</div>
-                  <p className="text-gray-500 dark:text-white/40">No trips found.</p>
-                </div>
-              ) : (
-                filtered.map(trip => (
-                  <div key={trip._id}
-                    className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5 hover:border-brand-blue/30 transition-all">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-white/40">
-                          {new Date(trip.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} •{' '}
-                          {new Date(trip.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColor(trip.status)}`}>
-                        {trip.status.charAt(0).toUpperCase() + trip.status.slice(1)}
-                      </span>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-brand-blue flex-shrink-0"></div>
-                        <p className="text-sm text-gray-700 dark:text-white/70">
-                          <span className="text-xs text-gray-400 dark:text-white/30 uppercase mr-2">Pickup</span>
-                          {trip.pickupLocation}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></div>
-                        <p className="text-sm text-gray-700 dark:text-white/70">
-                          <span className="text-xs text-gray-400 dark:text-white/30 uppercase mr-2">Dropoff</span>
-                          {trip.destination}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/5">
-                      <span className="text-lg font-bold text-gray-900 dark:text-white">
-                        {trip.fare ? `₦${trip.fare}` : '—'}
-                      </span>
-                      {trip.status === 'completed' && (
-                        <button
-                          onClick={() => navigate('/rider/disputes')}
-                          className="text-xs text-brand-blue border border-brand-blue/30 px-3 py-1.5 rounded-lg hover:bg-brand-blue/10 transition-all">
-                          Dispute
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Spend summary */}
-            <div className="space-y-6">
-              <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2">Total Spend</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">₦{totalSpend.toLocaleString()}</p>
-                <p className="text-xs text-green-500 mt-2">↑ 12% increase this month</p>
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/5 grid grid-cols-3 gap-2">
-                  {[40, 65, 45, 80, 55, 90].map((h, i) => (
-                    <div key={i} className="flex flex-col items-center gap-1">
-                      <div className="w-full bg-brand-blue/20 rounded-sm" style={{ height: `${h * 0.6}px` }}>
-                        <div className="w-full bg-brand-blue rounded-sm" style={{ height: `${h * 0.3}px`, marginTop: `${h * 0.3}px` }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          <section className="card card-pad">
+            <SectionHeader title="Summary" />
+            <dl className="mt-4 space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="text-ink-muted">Total trips</dt>
+                <dd className="font-medium text-ink tabular-nums">{trips.length}</dd>
               </div>
-
-              <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Summary</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-white/40">Total trips</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{trips.length}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-white/40">Completed</span>
-                    <span className="font-medium text-green-500">{trips.filter(t => t.status === 'completed').length}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-white/40">Cancelled</span>
-                    <span className="font-medium text-red-500">{trips.filter(t => t.status === 'cancelled').length}</span>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-ink-muted">Completed</dt>
+                <dd className="font-medium text-success tabular-nums">{trips.filter(t => t.status === 'completed').length}</dd>
               </div>
-            </div>
-          </div>
-        </main>
+              <div className="flex items-center justify-between">
+                <dt className="text-ink-muted">Cancelled</dt>
+                <dd className="font-medium text-danger tabular-nums">{trips.filter(t => t.status === 'cancelled').length}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

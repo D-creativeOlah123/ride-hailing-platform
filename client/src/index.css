@@ -2,13 +2,200 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  RideLink design tokens.
+  Channels are space-separated RGB so Tailwind opacity modifiers work (bg-accent/10).
+  Light and dark are tuned separately: light relies on soft shadows over a cool
+  off-white canvas; dark relies on layered surfaces and hairline borders.
+*/
 @layer base {
-  body {
-    @apply bg-white dark:bg-navy-900 text-gray-900 dark:text-white transition-colors duration-300;
-    font-family: 'Inter', sans-serif;
+  :root {
+    color-scheme: light;
+
+    --canvas: 246 247 249;
+    --surface: 255 255 255;
+    --surface-2: 242 244 247;
+    --surface-3: 233 236 241;
+    --line: 227 230 235;
+    --line-strong: 205 210 218;
+
+    --ink: 14 21 37;
+    --ink-muted: 79 88 105;
+    --ink-subtle: 128 137 153;
+
+    --accent: 31 87 231;
+    --accent-hover: 24 71 196;
+    --accent-text: 29 79 216;
+    --accent-soft: 234 240 254;
+
+    --success: 18 128 92;
+    --warning: 178 94 9;
+    --danger: 201 55 44;
+
+    --shadow-xs: 0 1px 2px rgb(16 24 40 / 0.05);
+    --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.03);
+    --shadow-raised: 0 12px 32px -12px rgb(16 24 40 / 0.14), 0 2px 6px -2px rgb(16 24 40 / 0.05);
+    --shadow-overlay: 0 24px 56px -16px rgb(16 24 40 / 0.24);
+    --btn-highlight: inset 0 1px 0 rgb(255 255 255 / 0.16);
   }
 
-  * {
-    @apply transition-colors duration-200;
+  .dark {
+    color-scheme: dark;
+
+    --canvas: 9 12 18;
+    --surface: 15 19 27;
+    --surface-2: 21 26 36;
+    --surface-3: 28 34 48;
+    --line: 31 37 49;
+    --line-strong: 44 51 66;
+
+    --ink: 237 240 245;
+    --ink-muted: 154 163 180;
+    --ink-subtle: 104 113 130;
+
+    --accent: 61 110 245;
+    --accent-hover: 85 128 247;
+    --accent-text: 122 155 255;
+    --accent-soft: 20 30 56;
+
+    --success: 52 192 138;
+    --warning: 229 161 58;
+    --danger: 240 106 95;
+
+    --shadow-xs: 0 1px 0 rgb(255 255 255 / 0.02) inset;
+    --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.03);
+    --shadow-raised: 0 16px 40px -16px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.04);
+    --shadow-overlay: 0 24px 64px -12px rgb(0 0 0 / 0.75);
+    --btn-highlight: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  ::selection {
+    @apply bg-accent/20;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/50 ring-offset-2 ring-offset-canvas;
+  }
+
+  h1, h2, h3, h4 {
+    @apply tracking-tight;
+  }
+}
+
+@layer components {
+  /* ---------- Buttons ---------- */
+  .btn {
+    @apply inline-flex h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-medium
+      transition-[background-color,border-color,color,box-shadow] duration-150
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-sm { @apply h-8 gap-1.5 px-3 text-[13px]; }
+  .btn-lg { @apply h-12 px-5 text-[15px]; }
+  .btn-icon { @apply w-10 px-0; }
+  .btn-icon.btn-sm { @apply w-8; }
+
+  .btn-primary {
+    @apply bg-accent text-white hover:bg-accent-hover;
+    box-shadow: var(--btn-highlight), var(--shadow-xs);
+  }
+  .btn-secondary {
+    @apply border border-line bg-surface text-ink shadow-xs hover:border-line-strong hover:bg-surface-2;
+  }
+  .btn-ghost {
+    @apply text-ink-muted hover:bg-surface-2 hover:text-ink;
+  }
+  .btn-danger {
+    @apply border border-danger/25 bg-danger/10 text-danger hover:bg-danger/15;
+  }
+
+  /* ---------- Surfaces ---------- */
+  .card {
+    @apply rounded-xl border border-line bg-surface shadow-card;
+  }
+  .card-pad { @apply p-5 sm:p-6; }
+  .card-interactive {
+    @apply transition-[border-color,background-color] duration-150 hover:border-line-strong;
+  }
+  .well {
+    @apply rounded-lg border border-line bg-surface-2;
+  }
+
+  /* ---------- Forms ---------- */
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-ink;
+  }
+  .hint {
+    @apply mt-1.5 text-xs text-ink-subtle;
+  }
+  .input {
+    @apply block h-11 w-full rounded-lg border border-line bg-surface px-3.5 text-sm text-ink shadow-xs
+      placeholder:text-ink-subtle
+      transition-[border-color,box-shadow] duration-150
+      hover:border-line-strong
+      focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  textarea.input { @apply h-auto py-3; }
+  select.input { @apply appearance-none pr-9; }
+
+  /* ---------- Text ---------- */
+  .eyebrow {
+    @apply text-2xs font-medium uppercase tracking-eyebrow text-ink-subtle;
+  }
+  .link {
+    @apply font-medium text-accent-text underline-offset-4 hover:underline;
+  }
+  .stat-value {
+    @apply text-[1.75rem] font-semibold leading-none tracking-tight text-ink tabular-nums;
+  }
+
+  /* ---------- Badges ---------- */
+  .badge {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-medium;
+  }
+  .badge-dot::before {
+    content: '';
+    @apply h-1.5 w-1.5 rounded-full bg-current;
+  }
+  .badge-neutral { @apply border-line bg-surface-2 text-ink-muted; }
+  .badge-accent { @apply border-accent/20 bg-accent/10 text-accent-text; }
+  .badge-success { @apply border-success/20 bg-success/10 text-success; }
+  .badge-warning { @apply border-warning/20 bg-warning/10 text-warning; }
+  .badge-danger { @apply border-danger/20 bg-danger/10 text-danger; }
+
+  /* ---------- Alerts ---------- */
+  .alert {
+    @apply flex items-start gap-2.5 rounded-lg border px-3.5 py-3 text-sm;
+  }
+  .alert-danger { @apply border-danger/20 bg-danger/[0.07] text-danger; }
+  .alert-success { @apply border-success/20 bg-success/[0.07] text-success; }
+
+  /* ---------- Decorative ---------- */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(var(--line)) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--line)) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 20%, transparent 75%);
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 20%, transparent 75%);
+  }
+
+  /* ---------- Tables ---------- */
+  .table-head {
+    @apply border-b border-line bg-surface-2/60 text-left text-xs font-medium text-ink-muted;
+  }
+  .table-row {
+    @apply border-b border-line last:border-0 transition-colors hover:bg-surface-2/50;
   }
 }

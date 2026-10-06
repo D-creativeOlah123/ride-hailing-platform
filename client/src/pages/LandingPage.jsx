@@ -1,133 +1,243 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  ArrowRight, Zap, ShieldCheck, CreditCard, Headset, Star, Menu, X, Clock, Route, Wallet,
+} from 'lucide-react'
 import ThemeToggle from '../components/ThemeToggle'
+import Logo from '../components/Logo'
+import { Avatar } from '../components/ui'
 
-export default function LandingPage() {
+const navLinks = [
+  { label: 'Features', href: '#features' },
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Testimonials', href: '#testimonials' },
+]
+
+const stats = [
+  { value: '50K+', label: 'Active riders' },
+  { value: '12K+', label: 'Expert drivers' },
+  { value: '4.9', label: 'Average rating', star: true },
+]
+
+const features = [
+  { icon: Zap, title: 'Fast Pickup', desc: 'Average pickup time under 3 minutes in premium zones.' },
+  { icon: ShieldCheck, title: 'Safe Rides', desc: 'All drivers verified with background checks and ratings.' },
+  { icon: CreditCard, title: 'Easy Payment', desc: 'Seamless billing with corporate and personal accounts.' },
+  { icon: Headset, title: '24/7 Support', desc: 'Round the clock assistance for riders and drivers.' },
+]
+
+const steps = [
+  { num: '01', title: 'Select Destination', desc: 'Enter your pickup location and destination. Our system finds the best route instantly.' },
+  { num: '02', title: 'Real-time Matching', desc: 'We match you with the nearest available premium driver within seconds.' },
+  { num: '03', title: 'Enjoy the Journey', desc: 'Sit back and relax. Track your ride live and arrive at your destination safely.' },
+]
+
+const testimonials = [
+  { name: 'James Cooling', role: 'Executive', text: 'The most professional ride service I have ever used. Always on time, always clean, always perfect.' },
+  { name: 'Sarah Chen', role: 'Consultant', text: 'RideLink has completely changed how I commute. The drivers are courteous and the app is flawless.' },
+  { name: 'Marcus Thomas', role: 'Entrepreneur', text: 'Reliable, fast, and premium. Exactly what a busy professional needs. Highly recommended.' },
+]
+
+function SectionIntro({ eyebrow, title, description }) {
   return (
-    <div className="min-h-screen bg-white dark:bg-navy-900 text-gray-900 dark:text-white">
+    <div className="max-w-2xl">
+      <p className="eyebrow mb-3 text-accent-text">{eyebrow}</p>
+      <h2 className="text-[1.75rem] font-semibold leading-tight tracking-tight text-ink sm:text-[2.25rem]">{title}</h2>
+      {description && <p className="mt-3 text-base leading-relaxed text-ink-muted">{description}</p>}
+    </div>
+  )
+}
 
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-navy-900/80 backdrop-blur-md border-b border-gray-200 dark:border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="text-brand-blue font-bold text-xl">RideLink</span>
-          <div className="hidden md:flex items-center gap-8 text-sm text-gray-600 dark:text-white/60">
-            <a href="#features" className="hover:text-brand-blue transition-colors">Features</a>
-            <a href="#how-it-works" className="hover:text-brand-blue transition-colors">How it works</a>
-            <a href="#testimonials" className="hover:text-brand-blue transition-colors">Testimonials</a>
+function RouteMap() {
+  return (
+    <svg viewBox="0 0 400 150" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <rect width="400" height="150" className="fill-surface-2" />
+      <g className="stroke-surface" strokeWidth="9" strokeLinecap="square">
+        <path d="M0 38H400M0 104H400M70 0V150M188 0V150M300 0V150M240 104L400 20" />
+      </g>
+      <g className="stroke-line" strokeWidth="1">
+        <path d="M0 70H400M128 0V150M250 0V104M350 0V150" />
+      </g>
+      <path
+        d="M70 128V104H188V38H300V22"
+        fill="none"
+        className="stroke-accent"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="70" cy="128" r="7" className="fill-accent stroke-surface" strokeWidth="3" />
+      <rect x="293" y="15" width="14" height="14" rx="3" className="fill-ink stroke-surface" strokeWidth="3" />
+    </svg>
+  )
+}
+
+function BookingCard() {
+  return (
+    <div className="card overflow-hidden shadow-raised">
+      <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <span className="text-sm font-semibold text-ink">Book a Ride</span>
+        <span className="badge badge-dot badge-success">Available now</span>
+      </div>
+
+      <div className="h-32 border-b border-line sm:h-36">
+        <RouteMap />
+      </div>
+
+      <div className="p-5">
+        <div className="relative space-y-2.5">
+          <span className="absolute left-[19px] top-[22px] h-[calc(100%-44px)] w-px bg-line-strong" aria-hidden="true" />
+          <div className="relative flex h-11 items-center gap-3 rounded-lg border border-line bg-surface-2 px-3.5">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-accent ring-4 ring-accent/15" />
+            <span className="text-sm text-ink-muted">Current Location</span>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Link to="/login" className="text-sm text-gray-600 dark:text-white/70 hover:text-brand-blue transition-colors">
-              Sign In
-            </Link>
-            <Link to="/register/rider" className="bg-brand-blue hover:bg-brand-blue-hover text-white text-sm px-4 py-2 rounded-lg transition-colors">
-              Get Started
-            </Link>
+          <div className="relative flex h-11 items-center gap-3 rounded-lg border border-line bg-surface-2 px-3.5">
+            <span className="h-2 w-2 shrink-0 rounded-[2px] bg-ink" />
+            <span className="text-sm text-ink-subtle">Enter Destination</span>
           </div>
         </div>
-      </nav>
+
+        <dl className="mt-4 grid grid-cols-3 divide-x divide-line rounded-lg border border-line">
+          {[
+            { icon: Clock, label: 'ETA', value: '3 mins' },
+            { icon: Route, label: 'Distance', value: '2.4 mi' },
+            { icon: Wallet, label: 'Est. Fare', value: '$12.50' },
+          ].map(({ icon: Icon, label, value }) => (
+            <div key={label} className="px-3 py-3">
+              <dt className="flex items-center gap-1.5 text-xs text-ink-subtle">
+                <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                {label}
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-ink tabular-nums">{value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <Link to="/register/rider" className="btn btn-primary mt-4 w-full">
+          Find a Ride
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+export default function LandingPage() {
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  return (
+    <div className="min-h-screen bg-canvas text-ink">
+
+      {/* Navbar */}
+      <header className="sticky top-0 z-50 border-b border-line/70 bg-canvas/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-content items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Logo />
+
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+            {navLinks.map(l => (
+              <a key={l.href} href={l.href} className="rounded-md px-3 py-2 text-sm text-ink-muted transition-colors hover:text-ink">
+                {l.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-1 sm:gap-2">
+            <ThemeToggle />
+            <Link to="/login" className="btn btn-ghost hidden sm:inline-flex">Sign In</Link>
+            <Link to="/register/rider" className="btn btn-primary btn-sm h-9 hidden sm:inline-flex">Get Started</Link>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon md:hidden"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-expanded={menuOpen}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {menuOpen ? <X className="h-5 w-5" strokeWidth={1.75} /> : <Menu className="h-5 w-5" strokeWidth={1.75} />}
+            </button>
+          </div>
+        </div>
+
+        {menuOpen && (
+          <div className="animate-fade-in border-t border-line bg-canvas md:hidden">
+            <nav className="mx-auto flex max-w-content flex-col px-4 py-3 sm:px-6" aria-label="Mobile">
+              {navLinks.map(l => (
+                <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-[15px] text-ink-muted hover:bg-surface-2 hover:text-ink">
+                  {l.label}
+                </a>
+              ))}
+              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-4">
+                <Link to="/login" className="btn btn-secondary">Sign In</Link>
+                <Link to="/register/rider" className="btn btn-primary">Get Started</Link>
+              </div>
+            </nav>
+          </div>
+        )}
+      </header>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row items-center gap-16">
-          <div className="flex-1 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 bg-brand-blue/10 border border-brand-blue/20 rounded-full px-4 py-1.5 text-brand-blue text-xs font-medium mb-6">
-              ● Premium Ride Experience
-            </div>
-            <h1 className="text-5xl lg:text-6xl font-bold leading-tight mb-6">
+      <section className="relative overflow-hidden">
+        <div className="bg-grid pointer-events-none absolute inset-0 opacity-70 dark:opacity-50" aria-hidden="true" />
+        <div className="relative mx-auto grid max-w-content items-center gap-12 px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:px-8 lg:pb-28 lg:pt-24">
+          <div className="text-center lg:text-left">
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-muted shadow-xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              Premium Ride Experience
+            </span>
+
+            <h1 className="mt-6 text-[2.5rem] font-semibold leading-[1.05] tracking-tightest text-ink sm:text-[3.25rem] lg:text-[3.75rem]">
               Your Ride,{' '}
-              <span className="text-brand-blue">Your Way</span>
+              <span className="text-accent-text">Your Way</span>
             </h1>
-            <p className="text-gray-500 dark:text-white/50 text-lg mb-8 max-w-lg">
+
+            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-ink-muted sm:text-lg lg:mx-0">
               Experience the future of urban mobility. Premium rides engineered for comfort, safety, and speed. Every trip, on your terms.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <Link to="/register/rider"
-                className="bg-brand-blue hover:bg-brand-blue-hover text-white px-8 py-3.5 rounded-xl font-medium transition-all hover:shadow-lg hover:shadow-brand-blue/25">
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+              <Link to="/register/rider" className="btn btn-primary btn-lg group">
                 Start Riding Now
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
               </Link>
-              <Link to="/register/driver"
-                className="border border-gray-300 dark:border-white/10 text-gray-700 dark:text-white/70 hover:border-brand-blue hover:text-brand-blue px-8 py-3.5 rounded-xl font-medium transition-all">
+              <Link to="/register/driver" className="btn btn-secondary btn-lg">
                 Join as Driver
               </Link>
             </div>
-            <div className="flex items-center gap-6 mt-10 justify-center lg:justify-start">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">50K+</p>
-                <p className="text-xs text-gray-500 dark:text-white/40">Active Riders</p>
-              </div>
-              <div className="w-px h-10 bg-gray-200 dark:bg-white/10"></div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">12K+</p>
-                <p className="text-xs text-gray-500 dark:text-white/40">Expert Drivers</p>
-              </div>
-              <div className="w-px h-10 bg-gray-200 dark:bg-white/10"></div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">4.9★</p>
-                <p className="text-xs text-gray-500 dark:text-white/40">Average Rating</p>
-              </div>
-            </div>
+
+            <dl className="mx-auto mt-12 grid max-w-md grid-cols-3 border-t border-line pt-6 lg:mx-0">
+              {stats.map((s, i) => (
+                <div key={s.label} className={`${i > 0 ? 'border-l border-line pl-4 sm:pl-6' : ''} ${i < stats.length - 1 ? 'pr-4 sm:pr-6' : ''} text-left`}>
+                  <dd className="flex items-center gap-1 text-xl font-semibold tracking-tight text-ink tabular-nums sm:text-2xl">
+                    {s.value}
+                    {s.star && <Star className="h-4 w-4 fill-warning text-warning" strokeWidth={0} />}
+                  </dd>
+                  <dt className="mt-1 text-xs text-ink-subtle sm:text-[13px]">{s.label}</dt>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          {/* Hero Card */}
-          <div className="flex-1 w-full max-w-md">
-            <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5 shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">Book a Ride</span>
-                <span className="text-xs bg-green-500/10 text-green-500 px-2 py-1 rounded-full">● Available Now</span>
-              </div>
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center gap-3 bg-white dark:bg-navy-700 rounded-xl px-4 py-3 border border-gray-200 dark:border-white/5">
-                  <div className="w-2 h-2 rounded-full bg-brand-blue"></div>
-                  <span className="text-sm text-gray-500 dark:text-white/40">Current Location</span>
-                </div>
-                <div className="flex items-center gap-3 bg-white dark:bg-navy-700 rounded-xl px-4 py-3 border border-gray-200 dark:border-white/5">
-                  <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                  <span className="text-sm text-gray-500 dark:text-white/40">Enter Destination</span>
-                </div>
-              </div>
-              <button className="w-full bg-brand-blue hover:bg-brand-blue-hover text-white py-3 rounded-xl font-medium transition-all">
-                Find a Ride
-              </button>
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-white/5">
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 dark:text-white/40">ETA</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">3 mins</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 dark:text-white/40">Distance</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">2.4 mi</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 dark:text-white/40">Est. Fare</p>
-                  <p className="text-sm font-semibold text-brand-blue">$12.50</p>
-                </div>
-              </div>
-            </div>
+          <div className="mx-auto w-full max-w-md lg:max-w-none">
+            <BookingCard />
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="py-20 px-6 bg-gray-50 dark:bg-navy-800/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold mb-3">Engineered for Excellence</h2>
-            <p className="text-gray-500 dark:text-white/40 max-w-xl mx-auto">
-              Built from the ground up for riders who value their time, safety, and comfort above all else.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: '⚡', title: 'Fast Pickup', desc: 'Average pickup time under 3 minutes in premium zones.' },
-              { icon: '🛡️', title: 'Safe Rides', desc: 'All drivers verified with background checks and ratings.' },
-              { icon: '💳', title: 'Easy Payment', desc: 'Seamless billing with corporate and personal accounts.' },
-              { icon: '🕐', title: '24/7 Support', desc: 'Round the clock assistance for riders and drivers.' },
-            ].map((f) => (
-              <div key={f.title}
-                className="bg-white dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5 hover:border-brand-blue/30 transition-all hover:shadow-lg group">
-                <div className="text-3xl mb-4">{f.icon}</div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 dark:text-white/40 leading-relaxed">{f.desc}</p>
+      <section id="features" className="scroll-mt-16 border-t border-line bg-surface py-20 sm:py-24">
+        <div className="mx-auto max-w-content px-4 sm:px-6 lg:px-8">
+          <SectionIntro
+            eyebrow="Features"
+            title="Engineered for Excellence"
+            description="Built from the ground up for riders who value their time, safety, and comfort above all else."
+          />
+          <div className="mt-12 grid overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4 [&>*]:bg-surface gap-px">
+            {features.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="p-6 sm:p-7">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-accent-text">
+                  <Icon className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+                <h3 className="mt-5 text-[15px] font-semibold text-ink">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{desc}</p>
               </div>
             ))}
           </div>
@@ -135,94 +245,112 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold mb-3">Seamless in Three Steps</h2>
-            <p className="text-gray-500 dark:text-white/40">Getting around has never been this simple.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { num: '01', title: 'Select Destination', desc: 'Enter your pickup location and destination. Our system finds the best route instantly.' },
-              { num: '02', title: 'Real-time Matching', desc: 'We match you with the nearest available premium driver within seconds.' },
-              { num: '03', title: 'Enjoy the Journey', desc: 'Sit back and relax. Track your ride live and arrive at your destination safely.' },
-            ].map((step) => (
-              <div key={step.num} className="relative bg-gray-50 dark:bg-navy-800 rounded-2xl p-8 border border-gray-200 dark:border-white/5">
-                <span className="text-5xl font-bold text-gray-100 dark:text-white/5 absolute top-6 right-6">{step.num}</span>
-                <span className="text-brand-blue font-bold text-lg mb-4 block">{step.num}</span>
-                <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-3">{step.title}</h3>
-                <p className="text-gray-500 dark:text-white/40 text-sm leading-relaxed">{step.desc}</p>
-              </div>
+      <section id="how-it-works" className="scroll-mt-16 border-t border-line py-20 sm:py-24">
+        <div className="mx-auto max-w-content px-4 sm:px-6 lg:px-8">
+          <SectionIntro
+            eyebrow="How it works"
+            title="Seamless in Three Steps"
+            description="Getting around has never been this simple."
+          />
+          <ol className="mt-12 grid gap-4 md:grid-cols-3 md:gap-6">
+            {steps.map((step) => (
+              <li key={step.num} className="card card-pad relative">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-xs font-medium text-accent-text">{step.num}</span>
+                  <span className="h-px flex-1 bg-line" aria-hidden="true" />
+                </div>
+                <h3 className="mt-6 text-[17px] font-semibold text-ink">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{step.desc}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 px-6 bg-gray-50 dark:bg-navy-800/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold mb-3">What Our Elite Riders Say</h2>
-            <p className="text-gray-500 dark:text-white/40">Join millions of professionals who rely on RideLink every day.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { name: 'James Cooling', role: 'Executive', text: 'The most professional ride service I have ever used. Always on time, always clean, always perfect.' },
-              { name: 'Sarah Chen', role: 'Consultant', text: 'RideLink has completely changed how I commute. The drivers are courteous and the app is flawless.' },
-              { name: 'Marcus Thomas', role: 'Entrepreneur', text: 'Reliable, fast, and premium. Exactly what a busy professional needs. Highly recommended.' },
-            ].map((t) => (
-              <div key={t.name} className="bg-white dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                <div className="flex text-yellow-400 text-sm mb-4">★★★★★</div>
-                <p className="text-gray-600 dark:text-white/60 text-sm leading-relaxed mb-6">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-brand-blue flex items-center justify-center text-white text-sm font-bold">
-                    {t.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{t.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-white/40">{t.role}</p>
-                  </div>
+      <section id="testimonials" className="scroll-mt-16 border-t border-line bg-surface py-20 sm:py-24">
+        <div className="mx-auto max-w-content px-4 sm:px-6 lg:px-8">
+          <SectionIntro
+            eyebrow="Testimonials"
+            title="What Our Elite Riders Say"
+            description="Join millions of professionals who rely on RideLink every day."
+          />
+          <div className="mt-12 grid gap-4 md:grid-cols-3 md:gap-6">
+            {testimonials.map((t) => (
+              <figure key={t.name} className="flex flex-col rounded-xl border border-line bg-canvas p-6 dark:bg-surface-2/50">
+                <div className="flex gap-0.5" aria-label="5 out of 5 stars">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-warning text-warning" strokeWidth={0} />
+                  ))}
                 </div>
-              </div>
+                <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-ink">
+                  “{t.text}”
+                </blockquote>
+                <figcaption className="mt-6 flex items-center gap-3 border-t border-line pt-4">
+                  <Avatar name={t.name} className="h-9 w-9 text-xs" />
+                  <div>
+                    <p className="text-sm font-medium text-ink">{t.name}</p>
+                    <p className="text-xs text-ink-subtle">{t.role}</p>
+                  </div>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="bg-brand-blue rounded-3xl p-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to Ride in Style?</h2>
-            <p className="text-white/70 mb-8">Join thousands of professionals who trust RideLink for their daily commute.</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/register/rider"
-                className="bg-white text-brand-blue hover:bg-gray-100 px-8 py-3.5 rounded-xl font-semibold transition-all">
-                Get Started Free
-              </Link>
-              <Link to="/register/driver"
-                className="border border-white/30 text-white hover:bg-white/10 px-8 py-3.5 rounded-xl font-medium transition-all">
-                Become a Driver
-              </Link>
+      <section className="border-t border-line py-20 sm:py-24">
+        <div className="mx-auto max-w-content px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-2xl bg-accent px-6 dark:bg-accent/90 py-12 text-center sm:px-12 sm:py-16">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.12]"
+              style={{
+                backgroundImage: 'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+                backgroundSize: '40px 40px',
+                maskImage: 'radial-gradient(ellipse 60% 80% at 50% 50%, #000, transparent)',
+                WebkitMaskImage: 'radial-gradient(ellipse 60% 80% at 50% 50%, #000, transparent)',
+              }}
+              aria-hidden="true"
+            />
+            <div className="relative">
+              <h2 className="text-[1.75rem] font-semibold tracking-tight text-white sm:text-[2.25rem]">Ready to Ride in Style?</h2>
+              <p className="mx-auto mt-3 max-w-md text-base text-white/75">
+                Join thousands of professionals who trust RideLink for their daily commute.
+              </p>
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link to="/register/rider" className="btn btn-lg bg-white font-semibold text-[#1847c4] shadow-xs hover:bg-white/90">
+                  Get Started Free
+                </Link>
+                <Link to="/register/driver" className="btn btn-lg border border-white/30 text-white hover:bg-white/10">
+                  Become a Driver
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-white/5 py-8 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="text-brand-blue font-bold text-lg">RideLink</span>
-          <p className="text-xs text-gray-500 dark:text-white/30">© 2024 RideLink. Precision in Motion.</p>
-          <div className="flex gap-6 text-xs text-gray-500 dark:text-white/30">
-            <a href="#" className="hover:text-brand-blue transition-colors">Support</a>
-            <a href="#" className="hover:text-brand-blue transition-colors">Safety</a>
-            <a href="#" className="hover:text-brand-blue transition-colors">Legal</a>
-            <a href="#" className="hover:text-brand-blue transition-colors">Privacy</a>
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-content flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+          <div className="flex flex-col gap-2">
+            <Logo />
+            <p className="text-[13px] text-ink-subtle">Precision in Motion.</p>
           </div>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted" aria-label="Footer">
+            <a href="#" className="hover:text-ink">Support</a>
+            <a href="#" className="hover:text-ink">Safety</a>
+            <a href="#" className="hover:text-ink">Legal</a>
+            <a href="#" className="hover:text-ink">Privacy</a>
+          </nav>
+        </div>
+        <div className="border-t border-line">
+          <p className="mx-auto max-w-content px-4 py-5 text-xs text-ink-subtle sm:px-6 lg:px-8">
+            © {new Date().getFullYear()} RideLink. All rights reserved.
+          </p>
         </div>
       </footer>
-
     </div>
   )
 }

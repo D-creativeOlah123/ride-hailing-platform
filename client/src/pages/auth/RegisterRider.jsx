@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import ThemeToggle from '../../components/ThemeToggle'
+import { User, Mail, Phone, Lock, AlertCircle } from 'lucide-react'
+import AuthLayout from '../../components/AuthLayout'
+import { Spinner } from '../../components/ui'
 import API from '../../api'
+
+const iconClass = 'pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle'
 
 export default function RegisterRider() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' })
@@ -33,107 +37,124 @@ export default function RegisterRider() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-navy-900 flex flex-col">
-      <nav className="px-6 py-4 flex items-center justify-between border-b border-gray-200 dark:border-white/5">
-        <Link to="/" className="text-brand-blue font-bold text-xl">RideLink</Link>
-        <ThemeToggle />
-      </nav>
+    <AuthLayout
+      title="Create Your Account"
+      subtitle="Join RideLink as a rider today."
+      footer={
+        <div className="space-y-2">
+          <p>
+            Already have an account?{' '}
+            <Link to="/login" className="link">Sign In</Link>
+          </p>
+          <p>
+            Want to drive instead?{' '}
+            <Link to="/register/driver" className="link">Join as Driver</Link>
+          </p>
+        </div>
+      }
+    >
+      <div className="mb-6 flex items-center gap-1.5" aria-hidden="true">
+        <div className="h-1 flex-1 rounded-full bg-accent" />
+        <div className="h-1 flex-1 rounded-full bg-surface-3" />
+      </div>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-8 border border-gray-200 dark:border-white/5 shadow-xl">
+      {error && (
+        <div className="alert alert-danger mb-5" role="alert">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex-1 h-1 bg-brand-blue rounded-full"></div>
-                <div className="flex-1 h-1 bg-gray-200 dark:bg-white/10 rounded-full"></div>
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Create Your Account</h1>
-              <p className="text-sm text-gray-500 dark:text-white/40">Join RideLink as a rider today.</p>
-            </div>
-
-            {error && (
-              <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2 block">Full Name</label>
-                <input
-                  type="text" placeholder="John Doe"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="w-full bg-white dark:bg-navy-700 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-brand-blue transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2 block">Email Address</label>
-                <input
-                  type="email" placeholder="john@example.com"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-white dark:bg-navy-700 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-brand-blue transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2 block">Phone Number</label>
-                <input
-                  type="tel" placeholder="08012345678"
-                  value={form.phone}
-                  onChange={e => setForm({ ...form, phone: e.target.value })}
-                  className="w-full bg-white dark:bg-navy-700 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-brand-blue transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2 block">Password</label>
-                <input
-                  type="password" placeholder="••••••••"
-                  value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
-                  className="w-full bg-white dark:bg-navy-700 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-brand-blue transition-colors"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-white/40 uppercase tracking-wider mb-2 block">Confirm Password</label>
-                <input
-                  type="password" placeholder="••••••••"
-                  value={form.confirmPassword}
-                  onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
-                  className="w-full bg-white dark:bg-navy-700 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-brand-blue transition-colors"
-                  required
-                />
-              </div>
-
-              <button type="submit" disabled={loading}
-                className="w-full bg-brand-blue hover:bg-brand-blue-hover disabled:opacity-60 text-white py-3 rounded-xl font-medium transition-all mt-2">
-                {loading ? 'Creating Account...' : 'Create Account'}
-              </button>
-            </form>
-
-            <p className="text-center text-sm text-gray-500 dark:text-white/40 mt-6">
-              Already have an account?{' '}
-              <Link to="/login" className="text-brand-blue hover:underline font-medium">Sign In</Link>
-            </p>
-
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/5 text-center">
-              <p className="text-sm text-gray-500 dark:text-white/40">
-                Want to drive instead?{' '}
-                <Link to="/register/driver" className="text-brand-blue hover:underline font-medium">Join as Driver</Link>
-              </p>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="name" className="label">Full Name</label>
+          <div className="relative">
+            <User className={iconClass} strokeWidth={1.75} />
+            <input
+              id="name"
+              type="text"
+              autoComplete="name"
+              placeholder="John Doe"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              className="input pl-10"
+              required
+            />
           </div>
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label htmlFor="email" className="label">Email Address</label>
+          <div className="relative">
+            <Mail className={iconClass} strokeWidth={1.75} />
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="john@example.com"
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+              className="input pl-10"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="phone" className="label">Phone Number</label>
+          <div className="relative">
+            <Phone className={iconClass} strokeWidth={1.75} />
+            <input
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder="08012345678"
+              value={form.phone}
+              onChange={e => setForm({ ...form, phone: e.target.value })}
+              className="input pl-10"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="password" className="label">Password</label>
+          <div className="relative">
+            <Lock className={iconClass} strokeWidth={1.75} />
+            <input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
+              className="input pl-10"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="confirmPassword" className="label">Confirm Password</label>
+          <div className="relative">
+            <Lock className={iconClass} strokeWidth={1.75} />
+            <input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={form.confirmPassword}
+              onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
+              className="input pl-10"
+              required
+            />
+          </div>
+        </div>
+
+        <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+          {loading ? <><Spinner /> Creating Account...</> : 'Create Account'}
+        </button>
+      </form>
+    </AuthLayout>
   )
 }

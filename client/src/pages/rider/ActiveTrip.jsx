@@ -1,8 +1,36 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import Sidebar from '../../components/Sidebar'
-import ThemeToggle from '../../components/ThemeToggle'
+import {
+  X, Share2, Star, MessageSquare, Phone, Search, Check, MapPin, CornerUpRight, Clock, Wallet,
+} from 'lucide-react'
+import AppShell from '../../components/AppShell'
+import { Avatar, SectionHeader, Spinner } from '../../components/ui'
 import API from '../../api'
+
+// Restrained route placeholder (street grid + route line).
+function RouteMap() {
+  return (
+    <svg viewBox="0 0 400 150" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <rect width="400" height="150" className="fill-surface-2" />
+      <g className="stroke-surface" strokeWidth="9" strokeLinecap="square">
+        <path d="M0 38H400M0 104H400M70 0V150M188 0V150M300 0V150M240 104L400 20" />
+      </g>
+      <g className="stroke-line" strokeWidth="1">
+        <path d="M0 70H400M128 0V150M250 0V104M350 0V150" />
+      </g>
+      <path
+        d="M70 128V104H188V38H300V22"
+        fill="none"
+        className="stroke-accent"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="70" cy="128" r="7" className="fill-accent stroke-surface" strokeWidth="3" />
+      <rect x="293" y="15" width="14" height="14" rx="3" className="fill-ink stroke-surface" strokeWidth="3" />
+    </svg>
+  )
+}
 
 export default function ActiveTrip() {
   const { id } = useParams()
@@ -51,180 +79,224 @@ export default function ActiveTrip() {
   const currentStep = steps.findIndex(s => s.key === trip?.status)
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-navy-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <header className="px-8 py-4 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-brand-blue/10 text-brand-blue text-xs px-3 py-1.5 rounded-full font-medium">
-              ● ACTIVE TRIP
-            </div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Live Tracking</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            {['requested', 'accepted', 'driver_arriving'].includes(trip?.status) && (
-              <button
-                onClick={handleCancel}
-                disabled={cancelling}
-                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 text-sm px-4 py-2 rounded-lg transition-all font-medium">
-                {cancelling ? 'Cancelling...' : '✕ Cancel Ride'}
-              </button>
-            )}
-            <button className="bg-gray-100 dark:bg-navy-700 text-gray-700 dark:text-white/70 text-sm px-4 py-2 rounded-lg transition-all">
-              ↗ Share Trip
+    <AppShell
+      title={
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          Live Tracking
+          <span className="badge badge-dot badge-accent align-middle text-xs font-medium tracking-normal">Active trip</span>
+        </span>
+      }
+      actions={
+        <>
+          {['requested', 'accepted', 'driver_arriving'].includes(trip?.status) && (
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="btn btn-danger btn-sm">
+              {cancelling ? (
+                <><Spinner className="h-3.5 w-3.5" /> Cancelling...</>
+              ) : (
+                <><X className="h-3.5 w-3.5" strokeWidth={2} /> Cancel Ride</>
+              )}
             </button>
-          </div>
-        </header>
+          )}
+          <button className="btn btn-secondary btn-sm">
+            <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Share Trip
+          </button>
+        </>
+      }
+    >
+      {loading ? (
+        <div className="card flex items-center justify-center gap-2.5 py-20 text-sm text-ink-muted">
+          <Spinner />
+          Loading trip...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-        {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-gray-500 dark:text-white/40">Loading trip...</div>
-          </div>
-        ) : (
-          <main className="flex-1 p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left — driver info + status */}
+          <div className="min-w-0 space-y-6">
 
-              {/* Left — driver info + status */}
-              <div className="space-y-6">
-
-                {/* Driver card */}
-                {trip?.driver ? (
-                  <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-14 h-14 rounded-full bg-brand-blue flex items-center justify-center text-white text-xl font-bold">
-                        {trip.driver.name?.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white">{trip.driver.name}</p>
-                        <p className="text-xs text-yellow-400">★ 4.98</p>
-                      </div>
-                      <button className="ml-auto w-8 h-8 bg-gray-100 dark:bg-navy-700 rounded-lg flex items-center justify-center text-sm">💬</button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white dark:bg-navy-700 rounded-xl p-3 border border-gray-200 dark:border-white/5">
-                        <p className="text-xs text-gray-500 dark:text-white/40">Phone</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{trip.driver.phone}</p>
-                      </div>
-                      <div className="bg-white dark:bg-navy-700 rounded-xl p-3 border border-gray-200 dark:border-white/5">
-                        <p className="text-xs text-gray-500 dark:text-white/40">Vehicle</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">Tesla Model S</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 mt-4">
-                      <button className="flex-1 bg-brand-blue hover:bg-brand-blue-hover text-white text-sm py-2.5 rounded-xl transition-all">
-                        📞 Call
-                      </button>
-                      <button className="flex-1 bg-gray-100 dark:bg-navy-700 text-gray-700 dark:text-white/70 text-sm py-2.5 rounded-xl transition-all">
-                        💬 Message
-                      </button>
-                    </div>
+            {/* Driver card */}
+            {trip?.driver ? (
+              <section className="card card-pad">
+                <div className="flex items-center gap-3.5">
+                  <Avatar name={trip.driver.name || ''} className="h-12 w-12 text-base" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-semibold text-ink">{trip.driver.name}</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
+                      <Star className="h-3.5 w-3.5 fill-warning text-warning" strokeWidth={1.75} />
+                      <span className="tabular-nums">4.98</span>
+                    </p>
                   </div>
-                ) : (
-                  <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5 text-center">
-                    <div className="text-4xl mb-3">🔍</div>
-                    <p className="text-sm text-gray-500 dark:text-white/40">Finding your driver...</p>
+                  <button className="btn btn-secondary btn-icon btn-sm shrink-0" aria-label="Message driver">
+                    <MessageSquare className="h-4 w-4" strokeWidth={1.75} />
+                  </button>
+                </div>
+
+                <dl className="mt-5 grid grid-cols-2 divide-x divide-line rounded-lg border border-line">
+                  <div className="min-w-0 px-3.5 py-3">
+                    <dt className="text-xs text-ink-subtle">Phone</dt>
+                    <dd className="mt-0.5 truncate text-sm font-medium text-ink tabular-nums">{trip.driver.phone}</dd>
+                  </div>
+                  <div className="min-w-0 px-3.5 py-3">
+                    <dt className="text-xs text-ink-subtle">Vehicle</dt>
+                    <dd className="mt-0.5 truncate text-sm font-medium text-ink">Tesla Model S</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <button className="btn btn-primary">
+                    <Phone className="h-4 w-4" strokeWidth={1.75} />
+                    Call
+                  </button>
+                  <button className="btn btn-secondary">
+                    <MessageSquare className="h-4 w-4" strokeWidth={1.75} />
+                    Message
+                  </button>
+                </div>
+              </section>
+            ) : (
+              <section className="card flex flex-col items-center px-6 py-10 text-center">
+                <div className="relative mb-4 h-11 w-11">
+                  <span className="absolute inset-0 rounded-full border-2 border-accent/15" />
+                  <span className="absolute inset-0 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                  <span className="absolute inset-0 flex items-center justify-center text-accent-text">
+                    <Search className="h-4 w-4" strokeWidth={1.75} />
+                  </span>
+                </div>
+                <p className="text-sm text-ink-muted">Finding your driver...</p>
+              </section>
+            )}
+
+            {/* Trip status timeline */}
+            <section className="card card-pad">
+              <SectionHeader title="Trip Status" />
+              <ol className="mt-5">
+                {steps.map((step, i) => {
+                  const isDone = i < currentStep
+                  const isCurrent = i === currentStep
+                  const isPending = i > currentStep
+                  const isLast = i === steps.length - 1
+                  return (
+                    <li key={step.key} className="relative flex gap-3 pb-5 last:pb-0">
+                      {!isLast && (
+                        <span
+                          className={`absolute left-[9px] top-6 h-[calc(100%-28px)] w-0.5 rounded-full ${isDone ? 'bg-accent' : 'bg-line'}`}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span
+                        className={`relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                          isDone
+                            ? 'bg-accent text-white'
+                            : isCurrent
+                              ? 'border-2 border-accent bg-surface ring-4 ring-accent/15'
+                              : 'border-2 border-line bg-surface-3'
+                        }`}>
+                        {isDone && <Check className="h-3 w-3" strokeWidth={2.5} />}
+                        {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-accent" />}
+                      </span>
+                      <span className={`min-w-0 flex-1 text-sm leading-5 ${
+                        isCurrent ? 'font-medium text-ink' :
+                        isDone ? 'text-ink-muted' :
+                        isPending ? 'text-ink-subtle' : ''
+                      }`}>
+                        {step.label}
+                      </span>
+                      {isCurrent && (
+                        <span className="badge badge-accent shrink-0">Now</span>
+                      )}
+                    </li>
+                  )
+                })}
+              </ol>
+            </section>
+          </div>
+
+          {/* Right — map placeholder + trip details */}
+          <div className="min-w-0 space-y-6 lg:col-span-2">
+
+            {/* Map placeholder */}
+            <section className="card overflow-hidden">
+              <div className="relative aspect-[8/3]">
+                <RouteMap />
+                {trip?.status === 'driver_arriving' && (
+                  <div className="absolute left-1/2 top-4 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-xs font-medium text-white shadow-raised">
+                    <CornerUpRight className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                    <span className="truncate">Turn right on Montgomery St</span>
                   </div>
                 )}
+              </div>
+              <div className="flex items-center gap-3 border-t border-line px-5 py-3.5 sm:px-6">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted">
+                  <MapPin className="h-4 w-4" strokeWidth={1.75} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">Live map tracking</p>
+                  <p className="text-xs text-ink-subtle">Driver is 3 minutes away</p>
+                </div>
+              </div>
+            </section>
 
-                {/* Trip status timeline */}
-                <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-5">Trip Status</h3>
-                  <div className="space-y-4">
-                    {steps.map((step, i) => {
-                      const isDone = i < currentStep
-                      const isCurrent = i === currentStep
-                      const isPending = i > currentStep
-                      return (
-                        <div key={step.key} className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                            isDone ? 'bg-green-500' :
-                            isCurrent ? 'bg-brand-blue ring-4 ring-brand-blue/20' :
-                            'bg-gray-200 dark:bg-navy-600'
-                          }`}></div>
-                          <span className={`text-sm ${
-                            isCurrent ? 'text-brand-blue font-medium' :
-                            isDone ? 'text-green-500' :
-                            'text-gray-400 dark:text-white/30'
-                          }`}>{step.label}</span>
-                          {isCurrent && (
-                            <span className="ml-auto text-xs text-brand-blue animate-pulse">Now</span>
-                          )}
-                        </div>
-                      )
-                    })}
+            {/* Trip details */}
+            <section className="card card-pad">
+              <div className="relative space-y-4">
+                <span className="pointer-events-none absolute left-[3.5px] top-[26px] h-[52px] w-px bg-line-strong" aria-hidden="true" />
+                <div className="flex items-start gap-3">
+                  <span className="relative mt-[22px] h-2 w-2 shrink-0 rounded-full bg-accent ring-4 ring-accent/15" />
+                  <div className="min-w-0">
+                    <p className="eyebrow">Pickup</p>
+                    <p className="truncate text-sm font-medium text-ink">{trip?.pickupLocation}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="relative mt-[22px] h-2 w-2 shrink-0 rounded-[2px] bg-ink" />
+                  <div className="min-w-0">
+                    <p className="eyebrow">Destination</p>
+                    <p className="truncate text-sm font-medium text-ink">{trip?.destination}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Right — map placeholder + trip details */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Map placeholder */}
-                <div className="bg-gray-100 dark:bg-navy-800 rounded-2xl h-72 border border-gray-200 dark:border-white/5 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-10"
-                    style={{ backgroundImage: 'radial-gradient(circle, #2563eb 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-                  </div>
-                  <div className="text-center z-10">
-                    <div className="text-5xl mb-3">🗺️</div>
-                    <p className="text-gray-500 dark:text-white/40 text-sm">Live map tracking</p>
-                    <p className="text-xs text-gray-400 dark:text-white/20 mt-1">Driver is 3 minutes away</p>
-                  </div>
-                  {trip?.status === 'driver_arriving' && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-brand-blue text-white text-xs px-4 py-2 rounded-full">
-                      ↑ Turn right on Montgomery St
-                    </div>
-                  )}
+              <dl className="mt-5 grid grid-cols-2 divide-x divide-line rounded-lg border border-line">
+                <div className="min-w-0 px-4 py-3">
+                  <dt className="flex items-center gap-1.5 text-xs text-ink-subtle">
+                    <Clock className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Arrival Time
+                  </dt>
+                  <dd className="mt-1 text-sm font-semibold text-ink tabular-nums">~15 mins</dd>
                 </div>
-
-                {/* Trip details */}
-                <div className="bg-gray-50 dark:bg-navy-800 rounded-2xl p-6 border border-gray-200 dark:border-white/5">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Pickup</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-brand-blue"></div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{trip?.pickupLocation}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Destination</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{trip?.destination}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Arrival Time</p>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">~15 mins</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">Total Fare</p>
-                      <p className="text-sm font-medium text-brand-blue">
-                        {trip?.fare ? `₦${trip.fare}` : 'Calculating...'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {trip?.status === 'completed' && (
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-white/5 flex gap-3">
-                      <button
-                        onClick={() => navigate('/rider/disputes')}
-                        className="flex-1 bg-gray-100 dark:bg-navy-700 text-gray-700 dark:text-white/70 py-3 rounded-xl text-sm font-medium hover:border-brand-blue border border-transparent transition-all">
-                        Submit Dispute
-                      </button>
-                      <button
-                        onClick={() => navigate('/rider/dashboard')}
-                        className="flex-1 bg-brand-blue hover:bg-brand-blue-hover text-white py-3 rounded-xl text-sm font-medium transition-all">
-                        Back to Dashboard
-                      </button>
-                    </div>
-                  )}
+                <div className="min-w-0 px-4 py-3">
+                  <dt className="flex items-center gap-1.5 text-xs text-ink-subtle">
+                    <Wallet className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Total Fare
+                  </dt>
+                  <dd className="mt-1 truncate text-sm font-semibold text-accent-text tabular-nums">
+                    {trip?.fare ? `₦${trip.fare}` : 'Calculating...'}
+                  </dd>
                 </div>
-              </div>
-            </div>
-          </main>
-        )}
-      </div>
-    </div>
+              </dl>
+
+              {trip?.status === 'completed' && (
+                <div className="mt-5 flex flex-col-reverse gap-2.5 border-t border-line pt-5 sm:flex-row">
+                  <button
+                    onClick={() => navigate('/rider/disputes')}
+                    className="btn btn-secondary flex-1">
+                    Submit Dispute
+                  </button>
+                  <button
+                    onClick={() => navigate('/rider/dashboard')}
+                    className="btn btn-primary flex-1">
+                    Back to Dashboard
+                  </button>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+      )}
+    </AppShell>
   )
 }
