@@ -1,12 +1,42 @@
 const nodemailer = require('nodemailer')
 
-// Sends mail through a Gmail account using an App Password.
-// Needs GMAIL_USER and GMAIL_APP_PASSWORD. Without them, emails are logged
-// to the console instead (handy for local development).
-const isConfigured = () => Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
+// Sends email one of two ways:
+//  1. Brevo HTTP API (BREVO_API_KEY) — works on hosts that block SMTP, like Render's free plan.
+//  2. Gmail SMTP with an App Password (GMAIL_USER + GMAIL_APP_PASSWORD) — fine locally / on paid hosts.
+// The sender address is MAIL_FROM, or GMAIL_USER if MAIL_FROM isn't set. For Brevo it must be
+// a sender verified in the Brevo dashboard.
+// With neither configured, emails are logged to the console (handy for local development).
+const senderEmail = () => process.env.MAIL_FROM || process.env.GMAIL_USER
+
+const useBrevo = () => Boolean(process.env.BREVO_API_KEY && senderEmail())
+const useGmail = () => Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
+const isConfigured = () => useBrevo() || useGmail()
+
+const sendWithBrevo = async ({ to, subject, text, html }) => {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json',
+            accept: 'application/json',
+        },
+        body: JSON.stringify({
+            sender: { name: 'RideLink', email: senderEmail() },
+            to: [{ email: to }],
+            subject,
+            textContent: text,
+            htmlContent: html,
+        }),
+        signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) {
+        const detail = await res.text().catch(() => '')
+        throw new Error(`Brevo responded ${res.status}: ${detail.slice(0, 300)}`)
+    }
+}
 
 let transporter
-const getTransporter = () => {
+const sendWithGmail = ({ to, subject, text, html }) => {
     if (!transporter) {
         transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -14,23 +44,19 @@ const getTransporter = () => {
                 user: process.env.GMAIL_USER,
                 pass: process.env.GMAIL_APP_PASSWORD.replace(/\s+/g, ''),
             },
+            // Fail fast instead of hanging for minutes if SMTP is blocked
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000,
         })
     }
-    return transporter
+    return transporter.sendMail({ from: `"RideLink" <${senderEmail()}>`, to, subject, text, html })
 }
 
-const sendMail = async ({ to, subject, text, html }) => {
-    if (!isConfigured()) {
-        console.log(`[mailer] Email not configured. Would send to ${to}: ${subject}\n${text}`)
-        return
-    }
-    await getTransporter().sendMail({
-        from: `"RideLink" <${process.env.GMAIL_USER}>`,
-        to,
-        subject,
-        text,
-        html,
-    })
+const sendMail = async (message) => {
+    if (useBrevo()) return sendWithBrevo(message)
+    if (useGmail()) return sendWithGmail(message)
+    console.log(`[mailer] Email not configured. Would send to ${message.to}: ${message.subject}\n${message.text}`)
 }
 
 const sendPasswordResetEmail = (to, name, link) => {
