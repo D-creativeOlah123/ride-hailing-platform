@@ -18,7 +18,7 @@ import DriverActivity from './pages/driver/Activity'
 import DriverDisputes from './pages/driver/Disputes'
 import DriverActiveTrip from './pages/driver/ActiveTrip'
 import DriverAnalytics from './pages/driver/Analytics'
-import DriverSettings from './pages/rider/Settings'
+import DriverSettings from './pages/driver/Settings'
 
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminDisputes from './pages/admin/Disputes'
@@ -57,6 +57,8 @@ export default function App() {
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/disputes" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminDisputes /></ProtectedRoute>} />
         <Route path="/admin/drivers" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminDrivers /></ProtectedRoute>} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
     

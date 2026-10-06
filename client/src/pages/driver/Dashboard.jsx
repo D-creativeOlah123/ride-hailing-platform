@@ -213,7 +213,7 @@ export default function DriverDashboard() {
 
                         {/* Fare */}
                         <div className="shrink-0 text-right">
-                          <p className="text-base font-semibold text-ink tabular-nums">₦{Math.floor(Math.random() * 3000) + 500}</p>
+                          <p className="text-base font-semibold text-ink tabular-nums">{trip.fare ? `₦${trip.fare.toLocaleString()}` : '—'}</p>
                           <p className="text-xs text-ink-subtle">Est. fare</p>
                         </div>
                       </div>

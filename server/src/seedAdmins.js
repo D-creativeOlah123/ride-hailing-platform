@@ -1,4 +1,8 @@
 require('dotenv').config()
+
+if (process.env.DNS_SERVERS) {
+    require('dns').setServers(process.env.DNS_SERVERS.split(',').map(s => s.trim()))
+}
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 const User = require('./models/User')

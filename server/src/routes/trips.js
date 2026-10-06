@@ -12,7 +12,9 @@ router.post('/request', protect, authorize('rider'), async (req, res) => {
             rider: req.user.id,
             pickupLocation,
             destination,
-            status: 'requested'
+            status: 'requested',
+            // Fare is fixed when the ride is requested so rider and driver see the same amount
+            fare: Math.floor(Math.random() * 3000) + 500
         })
 
         await trip.save()
@@ -68,7 +70,8 @@ router.patch('/:id/status', protect, authorize('driver'), async (req, res) => {
         }
 
         trip.status = status
-        if (status === 'completed') {
+        // Trips created before fares were set at request time get one on completion
+        if (status === 'completed' && !trip.fare) {
             trip.fare = Math.floor(Math.random() * 3000) + 500
         }
 

@@ -3,6 +3,7 @@ const router = express.Router()
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
+const { protect, authorize } = require('../middleware/auth')
 
 // Register
 router.post('/register', async (req, res) => {
@@ -91,7 +92,7 @@ router.post('/login', async (req, res) => {
 
 
 // Get all pending drivers (admin only)
-router.get('/pending-drivers', async (req, res) => {
+router.get('/pending-drivers', protect, authorize('ops_manager', 'super_admin'), async (req, res) => {
     try {
         const drivers = await User.find({ role: 'driver', isApproved: false })
             .select('-password')
@@ -102,14 +103,16 @@ router.get('/pending-drivers', async (req, res) => {
 })
 
 // Approve or reject a driver (admin only)
-router.patch('/drivers/:id/approve', async (req, res) => {
+router.patch('/drivers/:id/approve', protect, authorize('ops_manager', 'super_admin'), async (req, res) => {
     try {
         const { approved } = req.body
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { isApproved: approved },
+        // Only driver accounts can be approved/rejected here
+        const user = await User.findOneAndUpdate(
+            { _id: req.params.id, role: 'driver' },
+            { isApproved: approved === true },
             { new: true }
         ).select('-password')
+        if (!user) return res.status(404).json({ message: 'Driver not found' })
         res.json({ message: approved ? 'Driver approved' : 'Driver rejected', user })
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message })

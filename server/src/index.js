@@ -1,5 +1,11 @@
 require('dotenv').config()
 
+// Some networks (e.g. certain Windows setups) refuse the SRV lookups that
+// mongodb+srv:// needs. Set DNS_SERVERS=8.8.8.8,1.1.1.1 to use public DNS instead.
+if (process.env.DNS_SERVERS) {
+    require('dns').setServers(process.env.DNS_SERVERS.split(',').map(s => s.trim()))
+}
+
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
