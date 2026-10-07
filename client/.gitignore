@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Landing photo originals (see scripts/optimise-images.mjs)
+.image-cache

@@ -1,0 +1,194 @@
+{
+  "_about": "Source photos for the landing page. All from Unsplash (Unsplash Licence: free for commercial use, no attribution required). Run `npm run images` to download and convert. `kind` sets output sizes: hero = 1920/960, card = 1280/640, portrait = 480/240 square.",
+  "images": [
+    {
+      "file": "hero-01-passenger-backseat",
+      "kind": "hero",
+      "id": "xpTsS9PJMXQ",
+      "src": "https://images.unsplash.com/photo-1536139414673-1b479272ea38",
+      "by": "Joshua Oluwagbemiga",
+      "page": "https://unsplash.com/photos/smiling-man-sitting-inside-vehicle-at-daytime-xpTsS9PJMXQ",
+      "alt_hint": "smiling man sitting inside vehicle at daytime"
+    },
+    {
+      "file": "hero-02-car-waiting-kerb",
+      "kind": "hero",
+      "id": "gJkXSr7q6Tc",
+      "src": "https://images.unsplash.com/photo-1770010313695-22c82c487267",
+      "by": "Fabio Sasso",
+      "page": "https://unsplash.com/photos/cars-driving-on-a-city-street-at-dusk-gJkXSr7q6Tc",
+      "alt_hint": "Cars driving on a city street at dusk"
+    },
+    {
+      "file": "hero-03-booking-phone",
+      "kind": "hero",
+      "id": "4IkmVWRdrV8",
+      "src": "https://images.unsplash.com/photo-1758273237946-26d40a31f02a",
+      "by": "Vitaly Gariev",
+      "page": "https://unsplash.com/photos/young-woman-in-yellow-raincoat-listening-to-music-outdoors-4IkmVWRdrV8",
+      "alt_hint": "Young woman in yellow raincoat listening to music outdoors"
+    },
+    {
+      "file": "hero-04-driver-opening-door",
+      "kind": "hero",
+      "id": "jZ9s1loMFiE",
+      "src": "https://images.unsplash.com/photo-1616804947838-6646ae0e423d",
+      "by": "Fortune Vieyra",
+      "page": "https://unsplash.com/photos/man-in-blue-suit-standing-beside-black-car-jZ9s1loMFiE",
+      "alt_hint": "man in blue suit standing beside black car"
+    },
+    {
+      "file": "hero-05-night-city-drive",
+      "kind": "hero",
+      "id": "AMH52JVEXU8",
+      "src": "https://images.unsplash.com/photo-1679055324332-189b4a7bc99e",
+      "by": "Erkan Sivas",
+      "page": "https://unsplash.com/photos/a-city-street-filled-with-lots-of-traffic-at-night-AMH52JVEXU8",
+      "alt_hint": "a city street filled with lots of traffic at night"
+    },
+    {
+      "file": "pickup",
+      "kind": "card",
+      "id": "Bzl-cftbnTc",
+      "src": "https://images.unsplash.com/photo-1560957123-81d48b38ab49",
+      "by": "Jorge Gardner",
+      "page": "https://unsplash.com/photos/woman-holding-smartphone-beside-yellow-box-van-Bzl-cftbnTc",
+      "alt_hint": "woman holding smartphone beside yellow box van"
+    },
+    {
+      "file": "dropoff",
+      "kind": "card",
+      "id": "xB3C0aFxQw8",
+      "src": "https://images.unsplash.com/photo-1602988087474-7e0c7766f5f9",
+      "by": "Nischal Malla",
+      "page": "https://unsplash.com/photos/man-in-white-t-shirt-and-black-pants-standing-beside-silver-suv-during-daytime-xB3C0aFxQw8",
+      "alt_hint": "man in white t-shirt and black pants standing beside silver suv during daytime"
+    },
+    {
+      "file": "driver-portrait",
+      "kind": "card",
+      "id": "CAWUhIHL-1I",
+      "src": "https://images.unsplash.com/photo-1671128972815-17ed4f000580",
+      "by": "Frankie Cordoba",
+      "page": "https://unsplash.com/photos/a-man-sitting-in-a-car-holding-a-steering-wheel-CAWUhIHL-1I",
+      "alt_hint": "a man sitting in a car holding a steering wheel"
+    },
+    {
+      "file": "driver-dashboard-phone",
+      "kind": "card",
+      "id": "P85dQzlsPlc",
+      "src": "https://images.unsplash.com/photo-1764347923709-fc48487f2486",
+      "by": "William Hadley",
+      "page": "https://unsplash.com/photos/smartphone-navigation-app-displaying-a-route-on-car-dashboard-P85dQzlsPlc",
+      "alt_hint": "Smartphone navigation app displaying a route on car dashboard"
+    },
+    {
+      "file": "airport",
+      "kind": "card",
+      "id": "KVJ2GIvzsk8",
+      "src": "https://images.unsplash.com/photo-1680064505972-7c0cf595a035",
+      "by": "Andrew Akabane",
+      "page": "https://unsplash.com/photos/a-street-with-cars-parked-in-front-of-a-building-KVJ2GIvzsk8",
+      "alt_hint": "a street with cars parked in front of a building"
+    },
+    {
+      "file": "comfort-interior",
+      "kind": "card",
+      "id": "cxM8lR9TPBk",
+      "src": "https://images.unsplash.com/photo-1770290405640-5daf7593c92a",
+      "by": "Autotrader UK",
+      "page": "https://unsplash.com/photos/black-leather-car-seats-in-the-back-row-cxM8lR9TPBk",
+      "alt_hint": "Black leather car seats in the back row"
+    },
+    {
+      "file": "xl-suv",
+      "kind": "card",
+      "id": "TlXey_wqevE",
+      "src": "https://images.unsplash.com/photo-1756142006790-82ebc921ebea",
+      "by": "Samsung Memory US",
+      "page": "https://unsplash.com/photos/man-with-two-girls-looking-away-TlXey_wqevE",
+      "alt_hint": "Man with two girls looking away"
+    },
+    {
+      "file": "economy-hatchback",
+      "kind": "card",
+      "id": "rnLePMs04X4",
+      "src": "https://images.unsplash.com/photo-1733759715701-00b393e0d613",
+      "by": "Ervin Erviansyah",
+      "page": "https://unsplash.com/photos/a-white-car-driving-down-a-street-next-to-tall-buildings-rnLePMs04X4",
+      "alt_hint": "A white car driving down a street next to tall buildings"
+    },
+    {
+      "file": "safety-seatbelt",
+      "kind": "card",
+      "id": "68SiDyLFEy4",
+      "src": "https://images.unsplash.com/photo-1565548506122-24cf4665ece4",
+      "by": "Chris Martin",
+      "page": "https://unsplash.com/photos/person-sitting-inside-car-during-day-68SiDyLFEy4",
+      "alt_hint": "person sitting inside car during day"
+    },
+    {
+      "file": "lagos-skyline",
+      "kind": "hero",
+      "id": "EMjpo0YjHPw",
+      "src": "https://images.unsplash.com/photo-1765475467677-579353b25ce0",
+      "by": "Malik Buraimoh",
+      "page": "https://unsplash.com/photos/boats-navigate-a-wide-river-beside-a-modern-city-bridge-EMjpo0YjHPw",
+      "alt_hint": "Boats navigate a wide river beside a modern city bridge"
+    },
+    {
+      "file": "lagos-night",
+      "kind": "hero",
+      "id": "DIYzsdvFxQw",
+      "src": "https://images.unsplash.com/photo-1574612357719-5dd0a272afe2",
+      "by": "Zenith Wogwugwu",
+      "page": "https://unsplash.com/photos/vehicles-on-roadway-during-daytime-DIYzsdvFxQw",
+      "alt_hint": "vehicles on roadway during daytime"
+    },
+    {
+      "file": "business-rider",
+      "kind": "card",
+      "id": "4duuKBTBObk",
+      "src": "https://images.unsplash.com/photo-1614570470207-6391eac7d902",
+      "by": "abdi mohamed",
+      "page": "https://unsplash.com/photos/man-in-black-jacket-and-brown-pants-sitting-on-black-car-4duuKBTBObk",
+      "alt_hint": "man in black jacket and brown pants sitting on black car"
+    },
+    {
+      "file": "testimonial-01",
+      "kind": "portrait",
+      "id": "21ckukPU3qA",
+      "src": "https://images.unsplash.com/photo-1710777932534-2a58edf3603d",
+      "by": "Abenezer Shewaga",
+      "page": "https://unsplash.com/photos/a-woman-with-a-smile-on-her-face-21ckukPU3qA",
+      "alt_hint": "a woman with a smile on her face"
+    },
+    {
+      "file": "testimonial-02",
+      "kind": "portrait",
+      "id": "NbnPiLClYj0",
+      "src": "https://images.unsplash.com/photo-1764103945182-7d324a311115",
+      "by": "Willy Dongmo",
+      "page": "https://unsplash.com/photos/a-man-in-a-white-shirt-with-a-watch-NbnPiLClYj0",
+      "alt_hint": "A man in a white shirt with a watch"
+    },
+    {
+      "file": "testimonial-03",
+      "kind": "portrait",
+      "id": "Q9_5wIRSJDs",
+      "src": "https://images.unsplash.com/photo-1563076767-5cda445a4f9f",
+      "by": "Alexandre Lecocq",
+      "page": "https://unsplash.com/photos/smiling-woman-holding-gray-apparel-Q9_5wIRSJDs",
+      "alt_hint": "smiling woman holding gray apparel"
+    },
+    {
+      "file": "testimonial-04",
+      "kind": "portrait",
+      "id": "j8RVCMWr3qE",
+      "src": "https://images.unsplash.com/photo-1726160182266-f5ff7f78682d",
+      "by": "Hamidu Samuel Mansaray",
+      "page": "https://unsplash.com/photos/a-man-in-a-black-shirt-and-a-black-tie-j8RVCMWr3qE",
+      "alt_hint": "A man in a black shirt and a black tie"
+    }
+  ]
+}
