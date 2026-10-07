@@ -13,6 +13,7 @@ const mongoose = require('mongoose')
 const authRoutes = require('./routes/auth')
 const tripRoutes = require('./routes/trips')
 const disputeRoutes = require('./routes/disputes')
+const adminRoutes = require('./routes/admin')
 
 const app = express()
 
@@ -26,6 +27,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api/auth', authRoutes)
 app.use('/api/trips', tripRoutes)
 app.use('/api/disputes', disputeRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.get('/', (req, res) => {
     res.json({ message: 'Ride-hailing API is running!' })

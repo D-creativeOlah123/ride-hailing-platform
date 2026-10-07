@@ -26,6 +26,8 @@ import DriverSettings from './pages/driver/Settings'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminDisputes from './pages/admin/Disputes'
 import AdminDrivers from './pages/admin/Drivers'
+import AdminActivity from './pages/admin/Activity'
+import AdminAnalytics from './pages/admin/Analytics'
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth()
@@ -64,6 +66,10 @@ export default function App() {
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/disputes" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminDisputes /></ProtectedRoute>} />
         <Route path="/admin/drivers" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminDrivers /></ProtectedRoute>} />
+        <Route path="/admin/activity" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminActivity /></ProtectedRoute>} />
+        <Route path="/admin/analytics" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><AdminAnalytics /></ProtectedRoute>} />
+        {/* The settings page is role-agnostic, so admins share it */}
+        <Route path="/admin/settings" element={<ProtectedRoute roles={['ops_manager', 'super_admin']}><RiderSettings /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

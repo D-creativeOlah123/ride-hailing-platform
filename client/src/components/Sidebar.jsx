@@ -21,16 +21,21 @@ const navItems = {
     { label: 'Analytics', icon: BarChart3, path: '/driver/analytics' },
     { label: 'Settings', icon: Settings, path: '/driver/settings' },
   ],
-  // Admin Activity / Analytics / Settings pages don't exist yet — add them here once built.
   ops_manager: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+    { label: 'Activity', icon: History, path: '/admin/activity' },
     { label: 'Disputes', icon: Flag, path: '/admin/disputes' },
     { label: 'Drivers', icon: Car, path: '/admin/drivers' },
+    { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+    { label: 'Settings', icon: Settings, path: '/admin/settings' },
   ],
   super_admin: [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+    { label: 'Activity', icon: History, path: '/admin/activity' },
     { label: 'Disputes', icon: Flag, path: '/admin/disputes' },
     { label: 'Drivers', icon: Car, path: '/admin/drivers' },
+    { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+    { label: 'Settings', icon: Settings, path: '/admin/settings' },
   ],
 }
 

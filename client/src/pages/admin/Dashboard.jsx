@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  CarFront, Flag, AlertTriangle, Wallet, Calendar, Upload, ChevronRight, Activity, MapPin,
+  CarFront, Flag, AlertTriangle, Wallet, BarChart3, ChevronRight, Activity, MapPin,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { StatusBadge, SectionHeader, EmptyState, Skeleton, Avatar } from '../../components/ui'
+import BarChart, { ChartLegend } from '../../components/BarChart'
 import { useAuth } from '../../context/AuthContext'
 import API from '../../api'
 
@@ -35,7 +36,7 @@ function KpiCard({ label, value, change, tone, note, icon: Icon }) {
       </div>
       <p className="stat-value mt-3 text-2xl sm:mt-4 sm:text-[1.75rem]">{value}</p>
       <div className="mt-2 flex min-w-0 items-center gap-2 text-xs">
-        <span className={`shrink-0 font-medium tabular-nums ${CHANGE_TONE[tone]}`}>{change}</span>
+        {change && <span className={`shrink-0 font-medium tabular-nums ${CHANGE_TONE[tone]}`}>{change}</span>}
         {note && <span className="truncate text-ink-subtle">{note}</span>}
       </div>
     </div>
@@ -51,6 +52,7 @@ export default function AdminDashboard() {
     resolvedDisputes: 0,
     escalatedDisputes: 0,
   })
+  const [overview, setOverview] = useState(null)
   const [recentActivity, setRecentActivity] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -60,10 +62,14 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      const disputesRes = await API.get('/disputes/all')
+      const [disputesRes, overviewRes] = await Promise.all([
+        API.get('/disputes/all'),
+        API.get('/admin/overview').catch(() => null),
+      ])
       const disputes = disputesRes.data
+      if (overviewRes) setOverview(overviewRes.data)
       setStats({
-        totalTrips: disputes.length * 12,
+        totalTrips: overviewRes?.data.trips.total ?? 0,
         activeDisputes: disputes.filter(d => d.status === 'open' || d.status === 'under_review').length,
         resolvedDisputes: disputes.filter(d => d.status === 'resolved').length,
         escalatedDisputes: disputes.filter(d => d.status === 'escalated').length,
@@ -76,14 +82,15 @@ export default function AdminDashboard() {
     }
   }
 
-  const barHeights = [40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88]
-  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+  const completedTrips = overview?.trips.byStatus.completed || 0
+  const revenue = overview?.trips.revenue || 0
+  const monthly = (overview?.monthly || []).map(m => ({ label: m.month, primary: m.completed, secondary: m.trips - m.completed }))
 
   const kpis = [
-    { label: 'Total Trips', value: stats.totalTrips.toLocaleString(), change: '+12.5%', tone: 'success', icon: CarFront },
-    { label: 'Active Disputes', value: stats.activeDisputes, change: '-2.4%', tone: 'danger', icon: Flag, note: `${stats.activeDisputes} requiring attention` },
-    { label: 'Escalated', value: stats.escalatedDisputes, change: '8 New', tone: 'warning', icon: AlertTriangle, note: 'Avg verification: 4.1h' },
-    { label: 'Revenue', value: '₦48,290', change: '+16.2%', tone: 'success', icon: Wallet, note: 'Projected 55k this month' },
+    { label: 'Total Trips', value: stats.totalTrips.toLocaleString(), change: `${completedTrips.toLocaleString()} completed`, tone: 'success', icon: CarFront },
+    { label: 'Active Disputes', value: stats.activeDisputes, icon: Flag, note: 'Open or under review' },
+    { label: 'Escalated', value: stats.escalatedDisputes, icon: AlertTriangle, note: 'Awaiting a super admin' },
+    { label: 'Revenue', value: `₦${revenue.toLocaleString()}`, icon: Wallet, note: 'From completed trips' },
   ]
 
   return (
@@ -92,11 +99,11 @@ export default function AdminDashboard() {
       subtitle="Real-time mobility metrics and fleet status."
       actions={
         <>
-          <button className="btn btn-secondary">
-            <Calendar className="h-4 w-4" strokeWidth={1.75} /> Last 30 Days
+          <button className="btn btn-secondary" onClick={() => navigate('/admin/activity')}>
+            <Activity className="h-4 w-4" strokeWidth={1.75} /> All trips
           </button>
-          <button className="btn btn-primary">
-            <Upload className="h-4 w-4" strokeWidth={1.75} /> Generate Report
+          <button className="btn btn-primary" onClick={() => navigate('/admin/analytics')}>
+            <BarChart3 className="h-4 w-4" strokeWidth={1.75} /> View analytics
           </button>
         </>
       }
@@ -112,39 +119,12 @@ export default function AdminDashboard() {
           <section className="card card-pad min-w-0 lg:col-span-2">
             <SectionHeader
               title="Trip Volume"
-              description="Demand distribution across premium fleets"
-              action={
-                <div className="flex items-center gap-3 pt-0.5 text-xs text-ink-muted">
-                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-accent" /> Lux</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-accent/30" /> Standard</span>
-                </div>
-              }
+              description="Trips requested per month, last 12 months"
+              action={<ChartLegend primaryLabel="Completed" secondaryLabel="Other" />}
             />
 
             <div className="mt-6">
-              <div className="relative h-44">
-                {/* Grid lines */}
-                <div className="pointer-events-none absolute inset-0 flex flex-col justify-between" aria-hidden="true">
-                  {[0, 1, 2, 3].map(i => <div key={i} className="border-t border-dashed border-line" />)}
-                </div>
-                <div className="relative flex h-full items-end gap-1 border-b border-line sm:gap-2">
-                  {barHeights.map((h, i) => (
-                    <div key={i} className="flex h-full min-w-0 flex-1 items-end">
-                      <div className="flex w-full flex-col gap-0.5" style={{ height: `${h}%` }}>
-                        <div className="w-full flex-1 rounded-t-[3px] bg-accent" />
-                        <div className="w-full rounded-b-[2px] bg-accent/30" style={{ height: '30%' }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-2 flex gap-1 sm:gap-2">
-                {months.map(m => (
-                  <span key={m} className="min-w-0 flex-1 text-center text-[10px] font-medium tracking-wide text-ink-subtle sm:text-2xs">
-                    {m}
-                  </span>
-                ))}
-              </div>
+              <BarChart data={monthly} primaryLabel="completed" secondaryLabel="other" emptyText={loading ? 'Loading…' : 'No trips yet'} />
             </div>
           </section>
 
