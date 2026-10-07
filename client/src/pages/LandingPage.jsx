@@ -339,7 +339,7 @@ export default function LandingPage() {
             <p className="text-[13px] text-ink-subtle">Precision in Motion.</p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-muted" aria-label="Footer">
-            <a href="#" className="hover:text-ink">Support</a>
+            <a href="mailto:eyinjueledumareadeyosola@gmail.com" className="hover:text-ink">Support</a>
             <a href="#" className="hover:text-ink">Safety</a>
             <a href="/terms" className="hover:text-ink">Legal</a>
             <a href="/privacy" className="hover:text-ink">Privacy</a>

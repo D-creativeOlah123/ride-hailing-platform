@@ -3,7 +3,7 @@ import Logo from '../components/Logo'
 import ThemeToggle from '../components/ThemeToggle'
 
 // Public support address shown on these pages — set it to the inbox you want users to write to.
-const CONTACT_EMAIL = ''
+const CONTACT_EMAIL = 'eyinjueledumareadeyosola@gmail.com'
 const UPDATED = 'October 6, 2026'
 
 function ContactLine() {

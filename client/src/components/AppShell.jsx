@@ -90,7 +90,7 @@ export default function AppShell({ title, subtitle, actions, children }) {
           <div className="mx-auto flex w-full max-w-content flex-col gap-2 px-4 py-5 text-xs text-ink-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
             <p>© {new Date().getFullYear()} RideLink. Precision in Motion.</p>
             <nav className="flex gap-5" aria-label="Footer">
-              <a href="#" className="hover:text-ink">Support</a>
+              <a href="mailto:eyinjueledumareadeyosola@gmail.com" className="hover:text-ink">Support</a>
               <a href="#" className="hover:text-ink">Safety</a>
               <a href="/terms" className="hover:text-ink">Legal</a>
               <a href="/privacy" className="hover:text-ink">Privacy</a>

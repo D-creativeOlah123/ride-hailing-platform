@@ -17,7 +17,7 @@ export default function AuthLayout({ title, subtitle, children, footer, width = 
           <Logo />
           <div className="flex items-center gap-1">
             <a href="/#how-it-works" className="hidden rounded-md px-3 py-2 text-sm text-ink-muted hover:text-ink sm:block">How it works</a>
-            <a href="#" className="hidden rounded-md px-3 py-2 text-sm text-ink-muted hover:text-ink sm:block">Support</a>
+            <a href="mailto:eyinjueledumareadeyosola@gmail.com" className="hidden rounded-md px-3 py-2 text-sm text-ink-muted hover:text-ink sm:block">Support</a>
             <ThemeToggle />
           </div>
         </div>
@@ -44,7 +44,7 @@ export default function AuthLayout({ title, subtitle, children, footer, width = 
           <nav className="flex gap-5" aria-label="Footer">
             <a href="/privacy" className="hover:text-ink">Privacy Policy</a>
             <a href="/terms" className="hover:text-ink">Terms of Service</a>
-            <a href="#" className="hover:text-ink">Support</a>
+            <a href="mailto:eyinjueledumareadeyosola@gmail.com" className="hover:text-ink">Support</a>
           </nav>
         </div>
       </footer>
