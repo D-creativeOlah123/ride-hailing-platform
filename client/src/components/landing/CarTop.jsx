@@ -1,0 +1,20 @@
+// Inline version of src/assets/landing/car-top.svg for use inside other SVGs.
+// Drawn facing +x and centred on (0,0); the body uses currentColor.
+export default function CarTop({ scale = 1, className = '' }) {
+  return (
+    <g className={className} transform={`scale(${scale}) translate(-24 -12)`}>
+      <rect x="3" y="5" width="3" height="3" rx="1" fill="#0b0f17" opacity=".55" />
+      <rect x="3" y="16" width="3" height="3" rx="1" fill="#0b0f17" opacity=".55" />
+      <rect x="35" y="4" width="4" height="3" rx="1" fill="#0b0f17" opacity=".55" />
+      <rect x="35" y="17" width="4" height="3" rx="1" fill="#0b0f17" opacity=".55" />
+      <rect x="2" y="5.5" width="44" height="13" rx="6.5" fill="currentColor" />
+      <path d="M30 7.2h4.6c1.5 0 2.7 1.1 3 2.6l.5 2.2-.5 2.2c-.3 1.5-1.5 2.6-3 2.6H30c.6-1.5.9-3.1.9-4.8s-.3-3.3-.9-4.8Z" fill="#fff" opacity=".82" />
+      <path d="M10.5 7.6H8.8c-1.2 0-2.2.9-2.4 2.1L6 12l.4 2.3c.2 1.2 1.2 2.1 2.4 2.1h1.7c-.5-1.3-.7-2.8-.7-4.4s.2-3.1.7-4.4Z" fill="#fff" opacity=".6" />
+      <rect x="12" y="8" width="17" height="8" rx="3" fill="#000" opacity=".12" />
+      <rect x="44" y="7.2" width="1.8" height="2.6" rx=".9" fill="#fff6c8" />
+      <rect x="44" y="14.2" width="1.8" height="2.6" rx=".9" fill="#fff6c8" />
+      <rect x="2.2" y="7.4" width="1.2" height="2.4" rx=".6" fill="#ff5a4e" />
+      <rect x="2.2" y="14.2" width="1.2" height="2.4" rx=".6" fill="#ff5a4e" />
+    </g>
+  )
+}

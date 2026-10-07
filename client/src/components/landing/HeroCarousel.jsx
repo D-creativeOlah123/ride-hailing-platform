@@ -22,7 +22,7 @@ export default function HeroCarousel() {
   return (
     <>
       <section
-        className="group/hero relative isolate flex min-h-[72svh] items-end bg-[#06080d] text-white outline-none md:min-h-[80svh] lg:min-h-[92svh] lg:items-start"
+        className="group/hero relative isolate flex min-h-[72svh] overflow-x-clip items-end bg-[#06080d] text-white outline-none md:min-h-[80svh] lg:min-h-[92svh] lg:items-start"
         role="region"
         aria-roledescription="carousel"
         aria-label="Featured"

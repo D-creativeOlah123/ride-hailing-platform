@@ -1,22 +1,9 @@
 // TEMPORARY: the previous landing page's lower sections, kept so the page stays complete
 // while the redesign is built phase by phase. Replaced and deleted in Phase 4.
 import { Link } from 'react-router-dom'
-import { Zap, ShieldCheck, CreditCard, Headset, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import Logo from '../Logo'
 import { Avatar } from '../ui'
-
-const features = [
-  { icon: Zap, title: 'Fast Pickup', desc: 'Average pickup time under 3 minutes in premium zones.' },
-  { icon: ShieldCheck, title: 'Safe Rides', desc: 'All drivers verified with background checks and ratings.' },
-  { icon: CreditCard, title: 'Easy Payment', desc: 'Seamless billing with corporate and personal accounts.' },
-  { icon: Headset, title: '24/7 Support', desc: 'Round the clock assistance for riders and drivers.' },
-]
-
-const steps = [
-  { num: '01', title: 'Select Destination', desc: 'Enter your pickup location and destination. Our system finds the best route instantly.' },
-  { num: '02', title: 'Real-time Matching', desc: 'We match you with the nearest available premium driver within seconds.' },
-  { num: '03', title: 'Enjoy the Journey', desc: 'Sit back and relax. Track your ride live and arrive at your destination safely.' },
-]
 
 const testimonials = [
   { name: 'James Cooling', role: 'Executive', text: 'The most professional ride service I have ever used. Always on time, always clean, always perfect.' },
@@ -38,51 +25,6 @@ function SectionIntro({ eyebrow, title, description }) {
 export default function LegacySections() {
   return (
     <>
-    {/* Features */}
-    <section id="features" className="scroll-mt-16 border-t border-line bg-surface py-20 sm:py-24">
-      <div className="mx-auto max-w-content px-4 sm:px-6 lg:px-8">
-        <SectionIntro
-          eyebrow="Features"
-          title="Engineered for Excellence"
-          description="Built from the ground up for riders who value their time, safety, and comfort above all else."
-        />
-        <div className="mt-12 grid overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4 [&>*]:bg-surface gap-px">
-          {features.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="p-6 sm:p-7">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface-2 text-accent-text">
-                <Icon className="h-5 w-5" strokeWidth={1.75} />
-              </span>
-              <h3 className="mt-5 text-[15px] font-semibold text-ink">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    {/* How it works */}
-    <section id="how-it-works" className="scroll-mt-16 border-t border-line py-20 sm:py-24">
-      <div className="mx-auto max-w-content px-4 sm:px-6 lg:px-8">
-        <SectionIntro
-          eyebrow="How it works"
-          title="Seamless in Three Steps"
-          description="Getting around has never been this simple."
-        />
-        <ol className="mt-12 grid gap-4 md:grid-cols-3 md:gap-6">
-          {steps.map((step) => (
-            <li key={step.num} className="card card-pad relative">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs font-medium text-accent-text">{step.num}</span>
-                <span className="h-px flex-1 bg-line" aria-hidden="true" />
-              </div>
-              <h3 className="mt-6 text-[17px] font-semibold text-ink">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{step.desc}</p>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
-
     {/* Testimonials */}
     <section id="testimonials" className="scroll-mt-16 border-t border-line bg-surface py-20 sm:py-24">
       <div className="mx-auto max-w-content px-4 sm:px-6 lg:px-8">
