@@ -100,6 +100,7 @@ export default {
                     from: { opacity: '0', transform: 'translateY(6px)' },
                     to: { opacity: '1', transform: 'translateY(0)' },
                 },
+                progress: { from: { transform: 'scaleX(0)' }, to: { transform: 'scaleX(1)' } },
             },
             animation: {
                 'fade-in': 'fade-in 150ms ease-out',
@@ -110,6 +111,7 @@ export default {
                 'draw-route': 'draw-route 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) both',
                 'fade-up': 'fade-up 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
                 'text-swap': 'text-swap 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both',
+                progress: 'progress 6s linear both',
             },
         },
     },

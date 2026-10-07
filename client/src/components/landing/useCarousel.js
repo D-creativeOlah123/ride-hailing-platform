@@ -20,16 +20,22 @@ export function useReducedMotion() {
  * Spread `bind` onto the carousel's root element.
  */
 export function useCarousel({ count, interval = 6000, autoplay = true }) {
-  const [index, setIndex] = useState(0)
+  // previous = the slide being left, so it can keep its end state while fading out
+  const [state, setState] = useState({ index: 0, previous: null })
+  const { index, previous } = state
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const [userPaused, setUserPaused] = useState(false)
   const [pageHidden, setPageHidden] = useState(false)
   const touch = useRef(null)
 
-  const goTo = useCallback((i) => setIndex(((i % count) + count) % count), [count])
-  const next = useCallback(() => setIndex(i => (i + 1) % count), [count])
-  const prev = useCallback(() => setIndex(i => (i - 1 + count) % count), [count])
+  const move = useCallback((fn) => setState(s => {
+    const target = ((fn(s.index) % count) + count) % count
+    return target === s.index ? s : { index: target, previous: s.index }
+  }), [count])
+  const goTo = useCallback((i) => move(() => i), [move])
+  const next = useCallback(() => move(i => i + 1), [move])
+  const prev = useCallback(() => move(i => i - 1), [move])
 
   useEffect(() => {
     const onVisibility = () => setPageHidden(document.hidden)
@@ -71,6 +77,7 @@ export function useCarousel({ count, interval = 6000, autoplay = true }) {
 
   return {
     index,
+    previous,
     goTo,
     next,
     prev,
