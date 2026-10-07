@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play, Star } from 'lucide-react'
 import Photo from './Photo'
@@ -17,15 +16,7 @@ export default function HeroCarousel() {
   const { index, previous, goTo, next, prev, paused, userPaused, toggleUserPaused, bind, hoverProps, controlProps, resetKey } = useCarousel({
     count: heroSlides.length,
     interval: INTERVAL,
-    label: 'hero',
   })
-
-  // Dev only: report what the OS/browser says about reduced motion (it no longer affects autoplay).
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log('[hero] prefers-reduced-motion: reduce =', window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-    }
-  }, [])
   const slide = heroSlides[index]
 
   return (

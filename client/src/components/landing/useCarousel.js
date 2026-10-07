@@ -26,7 +26,7 @@ export function useReducedMotion() {
  * One interval drives it; the tick lives in a ref so the interval is only
  * recreated when the pause state changes or the user navigates manually.
  */
-export function useCarousel({ count, interval = 6000, autoplay = true, label = 'carousel' }) {
+export function useCarousel({ count, interval = 6000, autoplay = true }) {
   // previous = the slide being left, so it can keep its end state while fading out
   const [state, setState] = useState({ index: 0, previous: null })
   const { index, previous } = state
@@ -47,9 +47,8 @@ export function useCarousel({ count, interval = 6000, autoplay = true, label = '
   useEffect(() => {
     tickRef.current = () => {
       move(i => i + 1)
-      if (import.meta.env.DEV) console.log(`[${label}] autoplay tick`, new Date().toLocaleTimeString())
     }
-  }, [move, label])
+  }, [move])
 
   useEffect(() => {
     const onVisibility = () => setPageHidden(document.hidden)
