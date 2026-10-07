@@ -14,28 +14,42 @@ export function useReducedMotion() {
 }
 
 /**
- * Shared carousel state: index, next/prev/goTo, autoplay with pause on hover,
- * focus, hidden tab or user toggle, swipe and arrow-key support.
+ * Shared carousel state with autoplay.
  *
- * Spread `bind` onto the carousel's root element.
+ * Autoplay runs from mount and pauses only while:
+ *   - a mouse hovers an element spread with `hoverProps`
+ *   - a control spread with `controlProps` has keyboard focus (:focus-visible)
+ *   - the tab is hidden
+ *   - the user pressed pause
+ * Reduced motion does NOT stop autoplay (callers just skip the transitions).
+ *
+ * One interval drives it; the tick lives in a ref so the interval is only
+ * recreated when the pause state changes or the user navigates manually.
  */
-export function useCarousel({ count, interval = 6000, autoplay = true }) {
+export function useCarousel({ count, interval = 6000, autoplay = true, label = 'carousel' }) {
   // previous = the slide being left, so it can keep its end state while fading out
   const [state, setState] = useState({ index: 0, previous: null })
   const { index, previous } = state
   const [hovered, setHovered] = useState(false)
-  const [focused, setFocused] = useState(false)
+  const [controlFocused, setControlFocused] = useState(false)
   const [userPaused, setUserPaused] = useState(false)
-  const [pageHidden, setPageHidden] = useState(false)
+  const [pageHidden, setPageHidden] = useState(() => typeof document !== 'undefined' && document.hidden)
+  const [resetKey, setResetKey] = useState(0)
   const touch = useRef(null)
+  const tickRef = useRef(null)
 
   const move = useCallback((fn) => setState(s => {
     const target = ((fn(s.index) % count) + count) % count
     return target === s.index ? s : { index: target, previous: s.index }
   }), [count])
-  const goTo = useCallback((i) => move(() => i), [move])
-  const next = useCallback(() => move(i => i + 1), [move])
-  const prev = useCallback(() => move(i => i - 1), [move])
+
+  // The autoplay tick (kept in a ref so the interval never needs recreating for it)
+  useEffect(() => {
+    tickRef.current = () => {
+      move(i => i + 1)
+      if (import.meta.env.DEV) console.log(`[${label}] autoplay tick`, new Date().toLocaleTimeString())
+    }
+  }, [move, label])
 
   useEffect(() => {
     const onVisibility = () => setPageHidden(document.hidden)
@@ -43,27 +57,34 @@ export function useCarousel({ count, interval = 6000, autoplay = true }) {
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
-  const paused = !autoplay || userPaused || hovered || focused || pageHidden
+  const paused = !autoplay || userPaused || hovered || controlFocused || pageHidden
 
-  // Restart the timer whenever the slide changes, so manual navigation gets a full interval.
   useEffect(() => {
     if (paused || count < 2) return
-    const t = setTimeout(next, interval)
-    return () => clearTimeout(t)
-  }, [index, paused, interval, next, count])
+    const id = setInterval(() => tickRef.current?.(), interval)
+    return () => clearInterval(id)
+  }, [paused, interval, count, resetKey])
 
-  const bind = {
-    // Only a real mouse counts as hover. Phones fire emulated mouseenter on tap with no
-    // matching leave, which would otherwise pause autoplay for good.
+  // Manual navigation restarts the countdown so the new slide gets a full interval.
+  const navigate = useCallback((fn) => { move(fn); setResetKey(k => k + 1) }, [move])
+  const goTo = useCallback((i) => navigate(() => i), [navigate])
+  const next = useCallback(() => navigate(i => i + 1), [navigate])
+  const prev = useCallback(() => navigate(i => i - 1), [navigate])
+
+  /** Spread on the interactive parts of the carousel (not a full-bleed background). */
+  const hoverProps = {
     onPointerEnter: (e) => { if (e.pointerType === 'mouse') setHovered(true) },
     onPointerLeave: (e) => { if (e.pointerType === 'mouse') setHovered(false) },
-    // Only keyboard focus pauses; taps and clicks don't produce :focus-visible.
-    onFocus: (e) => {
-      if (e.target.matches?.(':focus-visible')) setFocused(true)
-    },
-    onBlur: (e) => {
-      if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false)
-    },
+  }
+
+  /** Spread on dots / arrows / pause button: keyboard focus pauses, clicks and taps don't. */
+  const controlProps = {
+    onFocus: (e) => { if (e.currentTarget.matches(':focus-visible')) setControlFocused(true) },
+    onBlur: () => setControlFocused(false),
+  }
+
+  /** Spread on the carousel root: arrow keys and swipe. */
+  const bind = {
     onKeyDown: (e) => {
       if (e.key === 'ArrowRight') { e.preventDefault(); next() }
       if (e.key === 'ArrowLeft') { e.preventDefault(); prev() }
@@ -90,5 +111,8 @@ export function useCarousel({ count, interval = 6000, autoplay = true }) {
     userPaused,
     toggleUserPaused: () => setUserPaused(p => !p),
     bind,
+    hoverProps,
+    controlProps,
+    resetKey,
   }
 }

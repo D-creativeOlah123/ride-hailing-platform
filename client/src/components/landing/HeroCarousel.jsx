@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play, Star } from 'lucide-react'
 import Photo from './Photo'
@@ -13,10 +14,18 @@ const FOCAL_CLASSES =
 
 export default function HeroCarousel() {
   const reduced = useReducedMotion()
-  const { index, previous, goTo, next, prev, paused, userPaused, toggleUserPaused, bind } = useCarousel({
+  const { index, previous, goTo, next, prev, paused, userPaused, toggleUserPaused, bind, hoverProps, controlProps, resetKey } = useCarousel({
     count: heroSlides.length,
     interval: INTERVAL,
+    label: 'hero',
   })
+
+  // Dev only: report what the OS/browser says about reduced motion (it no longer affects autoplay).
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[hero] prefers-reduced-motion: reduce =', window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    }
+  }, [])
   const slide = heroSlides[index]
 
   return (
@@ -63,7 +72,7 @@ export default function HeroCarousel() {
 
         <div className="mx-auto grid w-full max-w-content gap-10 px-4 pb-24 pt-24 sm:px-6 lg:px-8 lg:pb-36 lg:pt-[max(7rem,16svh)]">
           {/* Copy */}
-          <div className="relative max-w-xl lg:max-w-[min(36rem,calc(100%-460px))] xl:max-w-xl [text-shadow:0_1px_18px_rgb(0_0_0/0.35)]" aria-live={paused ? 'polite' : 'off'}>
+          <div {...hoverProps} className="relative max-w-xl lg:max-w-[min(36rem,calc(100%-460px))] xl:max-w-xl [text-shadow:0_1px_18px_rgb(0_0_0/0.35)]" aria-live={paused ? 'polite' : 'off'}>
             {/* Soft local scrim: darkens only behind the copy so the headline keeps ≥4.5:1 on bright photos */}
             <div className="pointer-events-none absolute -inset-x-8 -inset-y-10 -z-10 rounded-[48px] bg-black/50 blur-2xl sm:-inset-x-12" aria-hidden="true" />
             <span className="hidden items-center gap-2 rounded-full border border-white/25 bg-black/25 sm:inline-flex px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm [text-shadow:none]">
@@ -91,7 +100,7 @@ export default function HeroCarousel() {
 
           {/* Desktop: narrower card (412px), aligned to the content's right edge and lowered so its
               top sits below the headline; it hangs ~80px past the hero's bottom edge. */}
-          <div className="absolute bottom-[-80px] right-[max(2rem,calc((100vw-72rem)/2+2rem))] z-20 hidden w-[412px] lg:block">
+          <div {...hoverProps} className="absolute bottom-[-80px] right-[max(2rem,calc((100vw-72rem)/2+2rem))] z-20 hidden w-[412px] lg:block">
             <div className="-rotate-1 transition-transform duration-300 ease-brand hover:rotate-0 motion-reduce:rotate-0">
               <BookingCard compact />
             </div>
@@ -101,7 +110,7 @@ export default function HeroCarousel() {
         {/* Controls: kept on the left so the desktop card never covers them; raised on
             small screens to clear the overlapping booking card. */}
         <div className="absolute inset-x-0 bottom-0">
-          <div className="mx-auto flex max-w-content items-center gap-3 px-4 pb-14 sm:px-6 lg:px-8 lg:pb-8">
+          <div {...hoverProps} className="mx-auto flex max-w-content items-center gap-3 px-4 pb-14 sm:px-6 lg:px-8 lg:pb-8">
             <div className="flex items-center gap-2" role="tablist" aria-label="Choose slide">
               {heroSlides.map((s, i) => {
                 const active = i === index
@@ -113,12 +122,13 @@ export default function HeroCarousel() {
                     aria-selected={active}
                     aria-label={`Slide ${i + 1}: ${s.headline}`}
                     onClick={() => goTo(i)}
+                    {...controlProps}
                     className={`relative h-1.5 overflow-hidden rounded-full transition-all duration-300 ease-brand ${active ? 'w-10 bg-white/30' : 'w-4 bg-white/45 hover:bg-white/75'}`}
                   >
                     {active && (
                       <span
-                        // Timer restarts after a pause, so the bar restarts too
-                        key={`bar-${index}-${paused}`}
+                        // The interval restarts after a pause or manual navigation, so the bar restarts too
+                        key={`bar-${index}-${paused}-${resetKey}`}
                         className={`absolute inset-0 origin-left rounded-full bg-white ${reduced ? '' : 'animate-progress'}`}
                         style={reduced ? undefined : { animationDuration: `${INTERVAL}ms`, animationPlayState: paused ? 'paused' : 'running' }}
                       />
@@ -136,6 +146,7 @@ export default function HeroCarousel() {
               <button
                 type="button"
                 onClick={toggleUserPaused}
+                {...controlProps}
                 className="btn btn-icon btn-sm border border-white/30 bg-black/20 text-white backdrop-blur-sm hover:bg-white/10"
                 aria-label={userPaused ? 'Play slideshow' : 'Pause slideshow'}
                 title={userPaused ? 'Play' : 'Pause'}
@@ -145,6 +156,7 @@ export default function HeroCarousel() {
               <button
                 type="button"
                 onClick={prev}
+                {...controlProps}
                 className="btn btn-icon btn-sm hidden border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-white/10 focus-visible:opacity-100 group-hover/hero:opacity-100 sm:inline-flex"
                 aria-label="Previous slide"
               >
@@ -153,6 +165,7 @@ export default function HeroCarousel() {
               <button
                 type="button"
                 onClick={next}
+                {...controlProps}
                 className="btn btn-icon btn-sm hidden border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-white/10 focus-visible:opacity-100 group-hover/hero:opacity-100 sm:inline-flex"
                 aria-label="Next slide"
               >
