@@ -9,9 +9,12 @@ import SafetySection from '../components/landing/SafetySection'
 import ForDrivers from '../components/landing/ForDrivers'
 import CityCoverage from '../components/landing/CityCoverage'
 import Stats from '../components/landing/Stats'
-import LegacySections from '../components/landing/LegacySections'
+import TestimonialCarousel from '../components/landing/TestimonialCarousel'
+import Faq from '../components/landing/Faq'
+import AppDownloadCta from '../components/landing/AppDownloadCta'
+import Footer from '../components/landing/Footer'
 
-// Sections are added phase by phase (see LANDING_PAGE_BRIEF.md §4).
+// Thin composition: each section lives in components/landing; copy and photos in landingContent.js.
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-canvas text-ink">
@@ -27,8 +30,11 @@ export default function LandingPage() {
         <ForDrivers />
         <CityCoverage />
         <Stats />
-        <LegacySections />
+        <TestimonialCarousel />
+        <Faq />
+        <AppDownloadCta />
       </main>
+      <Footer />
     </div>
   )
 }

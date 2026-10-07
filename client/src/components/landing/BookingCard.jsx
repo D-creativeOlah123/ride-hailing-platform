@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, Route, Wallet, Users, ArrowRight } from 'lucide-react'
 import RouteMap from './RouteMap'
@@ -12,8 +12,12 @@ const HOLD_MS = 2600
  * Hero booking card. Placeholders type out example Lagos trips; ETA, distance and
  * fare update with each example. Typing your own route stops the demo.
  */
-export default function BookingCard({ className = '', compact = false }) {
+export default function BookingCard({ className = '', compact = false, hideSeats = false }) {
   const reduced = useReducedMotion()
+  // The card renders more than once (hero desktop/mobile, phone mockup), so ids must be unique.
+  const uid = useId()
+  const pickupId = `${uid}-pickup`
+  const destinationId = `${uid}-destination`
   const [example, setExample] = useState(0)
   const [typed, setTyped] = useState({ pickup: '', destination: '' })
   const [values, setValues] = useState({ pickup: '', destination: '' })
@@ -69,9 +73,10 @@ export default function BookingCard({ className = '', compact = false }) {
           <span className="pointer-events-none absolute left-[18px] top-[22px] z-10 h-[calc(100%-44px)] w-px bg-line-strong" aria-hidden="true" />
           <div className="relative">
             <span className="pointer-events-none absolute left-[15px] top-1/2 z-10 h-2 w-2 -translate-y-1/2 rounded-full bg-accent ring-4 ring-accent/15" />
-            <label htmlFor="hero-pickup" className="sr-only">Pickup location</label>
+            <label htmlFor={pickupId} className="sr-only">Pickup location</label>
             <input
-              id="hero-pickup"
+              id={pickupId}
+              data-field="pickup"
               className="input pl-10"
               placeholder={placeholder.pickup}
               value={values.pickup}
@@ -83,9 +88,10 @@ export default function BookingCard({ className = '', compact = false }) {
           </div>
           <div className="relative">
             <span className="pointer-events-none absolute left-[15px] top-1/2 z-10 h-2 w-2 -translate-y-1/2 rounded-[2px] bg-ink" />
-            <label htmlFor="hero-destination" className="sr-only">Destination</label>
+            <label htmlFor={destinationId} className="sr-only">Destination</label>
             <input
-              id="hero-destination"
+              id={destinationId}
+              data-field="destination"
               className="input pl-10"
               placeholder={placeholder.destination}
               value={values.destination}
@@ -114,7 +120,7 @@ export default function BookingCard({ className = '', compact = false }) {
               >
                 <span className="flex items-center justify-between text-[13px] font-semibold">
                   {t.label}
-                  <span className={`flex items-center gap-0.5 text-2xs font-normal ${active ? 'text-accent-text/80' : 'text-ink-subtle'}`}>
+                  <span className={`${hideSeats ? 'hidden' : 'flex'} items-center gap-0.5 text-2xs font-normal ${active ? 'text-accent-text/80' : 'text-ink-subtle'}`}>
                     <Users className="h-3 w-3" /> {t.seats}
                   </span>
                 </span>
