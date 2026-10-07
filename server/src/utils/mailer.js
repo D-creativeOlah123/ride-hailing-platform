@@ -1,16 +1,41 @@
 const nodemailer = require('nodemailer')
 
-// Sends email one of two ways:
-//  1. Brevo HTTP API (BREVO_API_KEY) — works on hosts that block SMTP, like Render's free plan.
-//  2. Gmail SMTP with an App Password (GMAIL_USER + GMAIL_APP_PASSWORD) — fine locally / on paid hosts.
-// The sender address is MAIL_FROM, or GMAIL_USER if MAIL_FROM isn't set. For Brevo it must be
-// a sender verified in the Brevo dashboard.
-// With neither configured, emails are logged to the console (handy for local development).
+// Sends email one of three ways, in this order of preference:
+//  1. EmailJS (EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY) —
+//     sends through a connected Gmail account over HTTPS; works on Render's free plan, which blocks SMTP.
+//     Uses a template set up in the EmailJS dashboard (params: to_email, to_name, reset_link).
+//  2. Brevo HTTP API (BREVO_API_KEY).
+//  3. Gmail SMTP with an App Password (GMAIL_USER + GMAIL_APP_PASSWORD) — fine locally / on paid hosts.
+// The sender address for Brevo/Gmail is MAIL_FROM, or GMAIL_USER if MAIL_FROM isn't set.
+// With none configured, emails are logged to the console (handy for local development).
 const senderEmail = () => process.env.MAIL_FROM || process.env.GMAIL_USER
 
+const useEmailJS = () => Boolean(
+    process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID &&
+    process.env.EMAILJS_PUBLIC_KEY && process.env.EMAILJS_PRIVATE_KEY
+)
 const useBrevo = () => Boolean(process.env.BREVO_API_KEY && senderEmail())
 const useGmail = () => Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
-const isConfigured = () => useBrevo() || useGmail()
+const isConfigured = () => useEmailJS() || useBrevo() || useGmail()
+
+const sendWithEmailJS = async (templateParams) => {
+    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+            service_id: process.env.EMAILJS_SERVICE_ID,
+            template_id: process.env.EMAILJS_TEMPLATE_ID,
+            user_id: process.env.EMAILJS_PUBLIC_KEY,
+            accessToken: process.env.EMAILJS_PRIVATE_KEY,
+            template_params: templateParams,
+        }),
+        signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) {
+        const detail = await res.text().catch(() => '')
+        throw new Error(`EmailJS responded ${res.status}: ${detail.slice(0, 300)}`)
+    }
+}
 
 const sendWithBrevo = async ({ to, subject, text, html }) => {
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -61,6 +86,11 @@ const sendMail = async (message) => {
 
 const sendPasswordResetEmail = (to, name, link) => {
     const firstName = (name || '').split(' ')[0] || 'there'
+
+    if (useEmailJS()) {
+        return sendWithEmailJS({ to_email: to, to_name: firstName, reset_link: link })
+    }
+
     const text = [
         `Hi ${firstName},`,
         '',
