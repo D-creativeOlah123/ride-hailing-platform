@@ -12,7 +12,7 @@ const HOLD_MS = 2600
  * Hero booking card. Placeholders type out example Lagos trips; ETA, distance and
  * fare update with each example. Typing your own route stops the demo.
  */
-export default function BookingCard({ className = '' }) {
+export default function BookingCard({ className = '', compact = false }) {
   const reduced = useReducedMotion()
   const [example, setExample] = useState(0)
   const [typed, setTyped] = useState({ pickup: '', destination: '' })
@@ -55,16 +55,16 @@ export default function BookingCard({ className = '' }) {
 
   return (
     <div className={`card overflow-hidden bg-surface/95 shadow-overlay backdrop-blur-xl ${className}`}>
-      <div className="flex items-center justify-between border-b border-line px-5 py-4">
+      <div className={`flex items-center justify-between border-b border-line px-5 ${compact ? 'py-3' : 'py-4'}`}>
         <span className="text-sm font-semibold text-ink">Book a ride</span>
         <span className="badge badge-dot badge-success">Available now</span>
       </div>
 
-      <div className="h-28 border-b border-line sm:h-32">
+      <div className={`border-b border-line ${compact ? 'h-24' : 'h-28 sm:h-32'}`}>
         <RouteMap key={example} />
       </div>
 
-      <div className="space-y-4 p-5">
+      <div className={compact ? 'space-y-3 p-4' : 'space-y-4 p-5'}>
         <div className="relative space-y-2.5">
           <span className="pointer-events-none absolute left-[18px] top-[22px] z-10 h-[calc(100%-44px)] w-px bg-line-strong" aria-hidden="true" />
           <div className="relative">
@@ -143,7 +143,7 @@ export default function BookingCard({ className = '' }) {
           ))}
         </dl>
 
-        <Link to={routes.rider} className="btn btn-primary btn-lg w-full">
+        <Link to={routes.rider} className={`btn btn-primary w-full ${compact ? 'h-11' : 'btn-lg'}`}>
           Book a ride <ArrowRight className="h-4 w-4" />
         </Link>
       </div>

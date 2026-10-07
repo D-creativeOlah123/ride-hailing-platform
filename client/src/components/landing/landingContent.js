@@ -42,30 +42,38 @@ export const navLinks = [
 
 // ---------------------------------------------------------------------------
 // Hero carousel
+// focal = CSS object-position (also the Ken Burns zoom origin) for phones and md+ screens.
+// Photos fill the frame, so the x value matters most on phones (photo much wider than the screen)
+// and the y value on desktop. Tuned so faces stay in frame and clear of the desktop booking card.
 // ---------------------------------------------------------------------------
 export const heroSlides = [
   {
     image: photo('hero-01-passenger-backseat', 'Smiling rider relaxing in the back seat of a RideLink car on a sunny Lagos afternoon'),
+    focal: { mobile: '52% 22%', desktop: '50% 25%' },
     headline: 'Your ride, on your terms.',
     subhead: 'Tap, match, go. Premium rides across Lagos in under 3 minutes.',
   },
   {
     image: photo('hero-02-car-waiting-kerb', 'Cars with headlights on along a palm-lined city street at dusk'),
+    focal: { mobile: '38% 60%', desktop: '50% 62%' },
     headline: 'Always a car nearby.',
     subhead: '12,000+ verified drivers, online around the clock.',
   },
   {
     image: photo('hero-03-booking-phone', 'Woman smiling at her phone as she books a ride on a city street'),
+    focal: { mobile: '44% 30%', desktop: '50% 30%' },
     headline: 'Book in seconds.',
     subhead: 'Upfront fares in ₦. No surprises, no haggling.',
   },
   {
-    image: photo('hero-04-driver-opening-door', 'Man in a blue suit opening the door of a black sedan outside an office'),
+    image: photo('hero-04-driver-opening-door', 'Man in a blue suit stepping out beside the open door of a black sedan on a tree-lined street'),
+    focal: { mobile: '56% 22%', desktop: '50% 22%' },
     headline: 'Door to door, safely.',
     subhead: 'Every driver verified. Every trip tracked. Share it live with anyone.',
   },
   {
     image: photo('hero-05-night-city-drive', 'Light trails of cars on a city expressway at night'),
+    focal: { mobile: '55% 65%', desktop: '50% 58%' },
     headline: 'The city never sleeps. Neither do we.',
     subhead: '24/7 rides, 24/7 support.',
   },

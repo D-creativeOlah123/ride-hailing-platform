@@ -53,9 +53,14 @@ export function useCarousel({ count, interval = 6000, autoplay = true }) {
   }, [index, paused, interval, next, count])
 
   const bind = {
-    onMouseEnter: () => setHovered(true),
-    onMouseLeave: () => setHovered(false),
-    onFocus: () => setFocused(true),
+    // Only a real mouse counts as hover. Phones fire emulated mouseenter on tap with no
+    // matching leave, which would otherwise pause autoplay for good.
+    onPointerEnter: (e) => { if (e.pointerType === 'mouse') setHovered(true) },
+    onPointerLeave: (e) => { if (e.pointerType === 'mouse') setHovered(false) },
+    // Only keyboard focus pauses; taps and clicks don't produce :focus-visible.
+    onFocus: (e) => {
+      if (e.target.matches?.(':focus-visible')) setFocused(true)
+    },
     onBlur: (e) => {
       if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false)
     },
