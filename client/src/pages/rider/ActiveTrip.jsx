@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { Avatar, SectionHeader, Spinner } from '../../components/ui'
+import { TripChatPanel, UnreadBadge } from '../../components/TripChat'
+import { useTripChat } from '../../components/useTripChat'
 import API from '../../api'
 
 // Restrained route placeholder (street grid + route line).
@@ -38,6 +40,8 @@ export default function ActiveTrip() {
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const closeChat = useCallback(() => setChatOpen(false), [])
 
   // Promise chain so state is only set in async callbacks.
   const fetchTrip = useCallback(() =>
@@ -74,6 +78,9 @@ export default function ActiveTrip() {
   ]
 
   const currentStep = steps.findIndex(s => s.key === trip?.status)
+  // Chat only exists once a driver is assigned
+  const chat = useTripChat(id, !!trip?.driver)
+  const driverPhone = trip?.driver?.phone
 
   return (
     <AppShell
@@ -104,6 +111,10 @@ export default function ActiveTrip() {
         </>
       }
     >
+      {trip?.driver && (
+        <TripChatPanel open={chatOpen} onClose={closeChat} chat={chat} otherName={trip.driver.name || 'Driver'} />
+      )}
+
       {loading ? (
         <div className="card flex items-center justify-center gap-2.5 py-20 text-sm text-ink-muted">
           <Spinner />
@@ -127,8 +138,9 @@ export default function ActiveTrip() {
                       <span className="tabular-nums">4.98</span>
                     </p>
                   </div>
-                  <button className="btn btn-secondary btn-icon btn-sm shrink-0" aria-label="Message driver">
+                  <button type="button" onClick={() => setChatOpen(true)} className="btn btn-secondary btn-icon btn-sm relative shrink-0" aria-label="Message driver">
                     <MessageSquare className="h-4 w-4" strokeWidth={1.75} />
+                    {chat.unread > 0 && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-surface" aria-hidden="true" />}
                   </button>
                 </div>
 
@@ -144,13 +156,21 @@ export default function ActiveTrip() {
                 </dl>
 
                 <div className="mt-4 grid grid-cols-2 gap-2.5">
-                  <button className="btn btn-primary">
-                    <Phone className="h-4 w-4" strokeWidth={1.75} />
-                    Call
-                  </button>
-                  <button className="btn btn-secondary">
+                  {driverPhone ? (
+                    <a href={`tel:${driverPhone}`} className="btn btn-primary">
+                      <Phone className="h-4 w-4" strokeWidth={1.75} />
+                      Call
+                    </a>
+                  ) : (
+                    <button type="button" disabled className="btn btn-primary" title="This driver hasn't added a phone number">
+                      <Phone className="h-4 w-4" strokeWidth={1.75} />
+                      No phone
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setChatOpen(true)} className="btn btn-secondary">
                     <MessageSquare className="h-4 w-4" strokeWidth={1.75} />
                     Message
+                    <UnreadBadge count={chat.unread} />
                   </button>
                 </div>
               </section>

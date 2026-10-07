@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { Avatar, Spinner } from '../../components/ui'
+import { TripChatPanel, UnreadBadge } from '../../components/TripChat'
+import { useTripChat } from '../../components/useTripChat'
 import API from '../../api'
 
 // Restrained route placeholder (street grid + route line).
@@ -41,6 +43,8 @@ export default function DriverActiveTrip() {
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const closeChat = useCallback(() => setChatOpen(false), [])
 
   // Promise chain so state is only set in async callbacks.
   const fetchTrip = useCallback(() =>
@@ -72,6 +76,8 @@ export default function DriverActiveTrip() {
   }
 
   const progressIndex = PROGRESS_ORDER.indexOf(trip?.status)
+  const chat = useTripChat(id, !!trip)
+  const riderPhone = trip?.rider?.phone
 
   return (
     <AppShell
@@ -82,6 +88,8 @@ export default function DriverActiveTrip() {
         </span>
       }
     >
+      <TripChatPanel open={chatOpen} onClose={closeChat} chat={chat} otherName={trip?.rider?.name || 'Rider'} />
+
       {loading ? (
         <div className="card flex items-center justify-center gap-2.5 py-20 text-sm text-ink-muted">
           <Spinner />
@@ -123,13 +131,21 @@ export default function DriverActiveTrip() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2.5">
-                <button className="btn btn-primary">
-                  <Phone className="h-4 w-4" strokeWidth={1.75} />
-                  Call Rider
-                </button>
-                <button className="btn btn-secondary">
+                {riderPhone ? (
+                  <a href={`tel:${riderPhone}`} className="btn btn-primary">
+                    <Phone className="h-4 w-4" strokeWidth={1.75} />
+                    Call Rider
+                  </a>
+                ) : (
+                  <button type="button" disabled className="btn btn-primary" title="This rider hasn't added a phone number">
+                    <Phone className="h-4 w-4" strokeWidth={1.75} />
+                    No phone
+                  </button>
+                )}
+                <button type="button" onClick={() => setChatOpen(true)} className="btn btn-secondary">
                   <MessageSquare className="h-4 w-4" strokeWidth={1.75} />
                   Message
+                  <UnreadBadge count={chat.unread} />
                 </button>
               </div>
             </section>
@@ -140,10 +156,14 @@ export default function DriverActiveTrip() {
                   <Siren className="h-4 w-4" strokeWidth={1.75} />
                   <span className="text-xs font-medium">Emergency</span>
                 </button>
-                <button className="flex flex-col items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-3 text-ink-muted transition-colors hover:border-line-strong hover:text-ink">
+                <a
+                  href={riderPhone ? `tel:${riderPhone}` : undefined}
+                  aria-disabled={!riderPhone}
+                  className={`flex flex-col items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-3 text-ink-muted transition-colors ${riderPhone ? 'hover:border-line-strong hover:text-ink' : 'pointer-events-none opacity-50'}`}
+                >
                   <Phone className="h-4 w-4" strokeWidth={1.75} />
                   <span className="text-xs font-medium">Call Rider</span>
-                </button>
+                </a>
                 <button className="flex flex-col items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-3 text-ink-muted transition-colors hover:border-line-strong hover:text-ink">
                   <TriangleAlert className="h-4 w-4" strokeWidth={1.75} />
                   <span className="text-xs font-medium">Issue</span>

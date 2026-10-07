@@ -1,7 +1,20 @@
 const express = require('express')
 const router = express.Router()
 const Trip = require('../models/Trip')
+const Message = require('../models/Message')
 const { protect, authorize } = require('../middleware/auth')
+
+const CHAT_OPEN = ['accepted', 'driver_arriving', 'trip_started']
+
+// Loads the trip and checks the user is its rider or driver. Returns { trip, role } or sends an error.
+async function tripParticipant(req, res) {
+    const trip = await Trip.findById(req.params.id).select('rider driver status')
+    if (!trip) { res.status(404).json({ message: 'Trip not found' }); return null }
+    const uid = req.user.id
+    const role = trip.rider?.toString() === uid ? 'rider' : trip.driver?.toString() === uid ? 'driver' : null
+    if (!role) { res.status(403).json({ message: 'Not your trip' }); return null }
+    return { trip, role }
+}
 
 // Rider requests a trip
 router.post('/request', protect, authorize('rider'), async (req, res) => {
@@ -119,6 +132,37 @@ router.get('/history', protect, async (req, res) => {
         }
 
         res.json(trips)
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message })
+    }
+})
+
+// Trip chat: list messages (rider or driver of the trip only)
+router.get('/:id/messages', protect, async (req, res) => {
+    try {
+        const p = await tripParticipant(req, res)
+        if (!p) return
+        const messages = await Message.find({ trip: req.params.id }).sort({ createdAt: 1 }).limit(200)
+        res.json({ messages, canSend: CHAT_OPEN.includes(p.trip.status) && !!p.trip.driver, role: p.role })
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message })
+    }
+})
+
+// Trip chat: send a message (only while a driver is assigned and the trip is in progress)
+router.post('/:id/messages', protect, async (req, res) => {
+    try {
+        const p = await tripParticipant(req, res)
+        if (!p) return
+        if (!p.trip.driver || !CHAT_OPEN.includes(p.trip.status)) {
+            return res.status(400).json({ message: 'Messaging is only available during an active trip' })
+        }
+        const text = typeof req.body.text === 'string' ? req.body.text.trim() : ''
+        if (!text) return res.status(400).json({ message: 'Message cannot be empty' })
+        if (text.length > 500) return res.status(400).json({ message: 'Message is too long (500 characters max)' })
+
+        const message = await Message.create({ trip: p.trip._id, sender: req.user.id, senderRole: p.role, text })
+        res.status(201).json(message)
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message })
     }
