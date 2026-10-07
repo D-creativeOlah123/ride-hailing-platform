@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CarFront, TrendingUp, Flag } from 'lucide-react'
+import { CarFront, TrendingUp, TrendingDown, Minus, Flag } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { StatusBadge, SectionHeader, EmptyState, Skeleton } from '../../components/ui'
 import API from '../../api'
+import { naira, tripSummary, monthlySeries, monthOverMonth } from '../../utils/tripStats'
 
 export default function RiderActivity() {
   const [trips, setTrips] = useState([])
@@ -12,15 +13,16 @@ export default function RiderActivity() {
   const navigate = useNavigate()
 
   // Promise chain so state is only set in async callbacks.
-  const fetchTrips = () =>
+  const fetchTrips = useCallback(() =>
     API.get('/trips/history')
-      .then(res => setTrips(res.data))
+      .then(res => setTrips(Array.isArray(res.data) ? res.data : []))
       .catch(err => console.error(err))
-      .finally(() => setLoading(false))
+      .finally(() => setLoading(false)),
+  [])
 
   useEffect(() => {
     fetchTrips()
-  }, [])
+  }, [fetchTrips])
 
   const filtered = trips.filter(t => {
     if (filter === 'completed') return t.status === 'completed'
@@ -28,9 +30,12 @@ export default function RiderActivity() {
     return true
   })
 
-  const totalSpend = trips
-    .filter(t => t.status === 'completed')
-    .reduce((sum, t) => sum + (t.fare || 0), 0)
+  const summary = tripSummary(trips)
+  const series = monthlySeries(trips, 6)
+  const spendChange = monthOverMonth(series, 'amount')
+  const maxAmount = Math.max(0, ...series.map(m => m.amount))
+  const TrendIcon = spendChange > 0 ? TrendingUp : spendChange < 0 ? TrendingDown : Minus
+  const chartLabel = `Spend over the last 6 months: ${series.map(m => `${m.label} ${naira(m.amount)}`).join(', ')}`
 
   const filterControl = (
     <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-surface-2 p-1" role="tablist" aria-label="Filter trips">
@@ -96,7 +101,7 @@ export default function RiderActivity() {
 
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <span className="text-[15px] font-semibold text-ink tabular-nums">
-                      {trip.fare ? `₦${trip.fare}` : '—'}
+                      {trip.fare ? naira(trip.fare) : '—'}
                     </span>
                     {trip.status === 'completed' && (
                       <button
@@ -118,17 +123,31 @@ export default function RiderActivity() {
         <div className="min-w-0 space-y-6">
           <section className="card card-pad">
             <p className="eyebrow">Total Spend</p>
-            <p className="stat-value mt-3">₦{totalSpend.toLocaleString()}</p>
-            <p className="mt-2 flex items-center gap-1 text-xs text-success">
-              <TrendingUp className="h-3.5 w-3.5" strokeWidth={1.75} />
-              12% increase this month
-            </p>
-            <div className="mt-5 flex h-16 items-end gap-2 border-t border-line pt-4" aria-hidden="true">
-              {[40, 65, 45, 80, 55, 90].map((h, i) => (
-                <div key={i} className="flex flex-1 flex-col justify-end overflow-hidden rounded-[3px] bg-accent/15" style={{ height: `${h * 0.6}px` }}>
-                  <div className="w-full bg-accent" style={{ height: `${h * 0.3}px` }} />
-                </div>
-              ))}
+            <p className="stat-value mt-3">{naira(summary.amount)}</p>
+            {spendChange !== null && (
+              <p className="mt-2 flex items-center gap-1 text-xs text-ink-muted">
+                <TrendIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                {spendChange === 0
+                  ? 'Same as last month'
+                  : `${Math.abs(spendChange)}% ${spendChange > 0 ? 'more' : 'less'} than last month`}
+              </p>
+            )}
+            <div className="mt-5 border-t border-line pt-4">
+              <div className="flex h-16 items-end gap-2" role="img" aria-label={chartLabel}>
+                {series.map(m => (
+                  <div key={m.key} className="flex h-full flex-1 flex-col justify-end overflow-hidden rounded-[3px] bg-accent/15" title={`${m.label}: ${naira(m.amount)}`}>
+                    <div
+                      className="w-full bg-accent"
+                      style={{ height: maxAmount ? `${(m.amount / maxAmount) * 100}%` : '0%' }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-1.5 flex gap-2" aria-hidden="true">
+                {series.map(m => (
+                  <span key={m.key} className="flex-1 text-center text-2xs text-ink-subtle">{m.label}</span>
+                ))}
+              </div>
             </div>
           </section>
 
@@ -137,15 +156,15 @@ export default function RiderActivity() {
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <dt className="text-ink-muted">Total trips</dt>
-                <dd className="font-medium text-ink tabular-nums">{trips.length}</dd>
+                <dd className="font-medium text-ink tabular-nums">{summary.total}</dd>
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-ink-muted">Completed</dt>
-                <dd className="font-medium text-success tabular-nums">{trips.filter(t => t.status === 'completed').length}</dd>
+                <dd className="font-medium text-success tabular-nums">{summary.completed}</dd>
               </div>
               <div className="flex items-center justify-between">
                 <dt className="text-ink-muted">Cancelled</dt>
-                <dd className="font-medium text-danger tabular-nums">{trips.filter(t => t.status === 'cancelled').length}</dd>
+                <dd className="font-medium text-danger tabular-nums">{summary.cancelled}</dd>
               </div>
             </dl>
           </section>

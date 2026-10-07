@@ -4,7 +4,7 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, ChevronDown, UploadCloud, UserRound, CarFront, IdCard,
 } from 'lucide-react'
 import AuthLayout from '../../components/AuthLayout'
-import { Spinner } from '../../components/ui'
+import { Spinner, ComingSoon } from '../../components/ui'
 import API from '../../api'
 
 const STEPS = [1, 2, 3]
@@ -26,6 +26,7 @@ export default function RegisterDriver() {
     name: '', email: '', phone: '', password: '',
     make: '', model: '', year: '', plateNumber: '', licenseNumber: ''
   })
+  const [certified, setCertified] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
@@ -176,15 +177,18 @@ export default function RegisterDriver() {
             <input id="licenseNumber" type="text" placeholder="DL-88239401" value={form.licenseNumber}
               onChange={e => setForm({ ...form, licenseNumber: e.target.value })} className={inputClass} />
           </div>
-          <div className="group flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-line-strong bg-surface-2/50 px-6 py-8 text-center transition-colors hover:border-accent hover:bg-accent/[0.04]">
-            <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface text-ink-muted shadow-xs transition-colors group-hover:text-accent-text">
+          <div className="flex flex-col items-center rounded-xl border border-dashed border-line bg-surface-2/50 px-6 py-8 text-center" aria-disabled="true">
+            <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-surface text-ink-subtle shadow-xs">
               <UploadCloud className="h-5 w-5" strokeWidth={1.75} />
             </span>
-            <p className="text-sm font-medium text-ink">Click to upload license photo</p>
-            <p className="mt-1 text-xs text-ink-subtle">SVG, PNG, JPG (max. 5MB)</p>
+            <p className="flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-ink-muted">
+              License photo upload <ComingSoon />
+            </p>
+            <p className="mt-1 text-xs text-ink-subtle">Our team will verify your license number during approval.</p>
           </div>
           <label className="flex cursor-pointer items-start gap-3">
-            <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 rounded border-line-strong accent-[rgb(var(--accent))]" required />
+            <input type="checkbox" checked={certified} onChange={e => setCertified(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-line-strong accent-[rgb(var(--accent))]" />
             <span className="text-[13px] leading-relaxed text-ink-muted">
               I certify that the information provided is accurate and I understand that fraudulent claims may result in account suspension.
             </span>
@@ -193,7 +197,7 @@ export default function RegisterDriver() {
             <button onClick={() => setStep(2)} className="btn btn-secondary btn-lg w-full sm:flex-1">
               <ArrowLeft className="h-4 w-4" /> Back to Step 2
             </button>
-            <button onClick={handleSubmit} disabled={loading} className="btn btn-primary btn-lg w-full sm:flex-1">
+            <button onClick={handleSubmit} disabled={loading || !certified} className="btn btn-primary btn-lg w-full sm:flex-1">
               {loading ? <><Spinner /> Submitting...</> : 'Submit Application'}
             </button>
           </div>

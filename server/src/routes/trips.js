@@ -123,7 +123,7 @@ router.get('/history', protect, async (req, res) => {
 
         if (req.user.role === 'rider') {
             trips = await Trip.find({ rider: req.user.id })
-                .populate('driver', 'name phone')
+                .populate('driver', 'name phone vehicle')
                 .sort({ createdAt: -1 })
         } else if (req.user.role === 'driver') {
             trips = await Trip.find({ driver: req.user.id })
@@ -173,7 +173,7 @@ router.get('/:id', protect, async (req, res) => {
     try {
         const trip = await Trip.findById(req.params.id)
             .populate('rider', 'name phone email')
-            .populate('driver', 'name phone email')
+            .populate('driver', 'name phone email vehicle')
 
         if (!trip) return res.status(404).json({ message: 'Trip not found' })
 

@@ -1,32 +1,20 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Wallet, TrendingUp, CalendarDays, CarFront, PowerOff, User, Phone, Map as MapIcon,
-  Gauge, Wrench, History, Flag, Settings, ChevronRight, Check,
+  Wallet, CalendarDays, CarFront, PowerOff, User, Phone, History, Flag, Settings, ChevronRight, Check,
+  BarChart3, ArrowRight,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
-import { SectionHeader, EmptyState, Skeleton, Spinner } from '../../components/ui'
+import { SectionHeader, EmptyState, Skeleton, Spinner, StatusBadge } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
 import API from '../../api'
 import beep from '../../utils/sound'
+import { naira, tripSummary } from '../../utils/tripStats'
 
-// Restrained street-grid placeholder with a highlighted demand zone.
-function DemandMap() {
-  return (
-    <svg viewBox="0 0 400 160" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <rect width="400" height="160" className="fill-surface-2" />
-      <g className="stroke-surface" strokeWidth="9" strokeLinecap="square">
-        <path d="M0 40H400M0 112H400M76 0V160M196 0V160M312 0V160M248 112L400 24" />
-      </g>
-      <g className="stroke-line" strokeWidth="1">
-        <path d="M0 76H400M136 0V160M256 0V112M360 0V160" />
-      </g>
-      <circle cx="236" cy="74" r="62" className="fill-accent/[0.06]" />
-      <circle cx="236" cy="74" r="36" className="fill-accent/[0.12]" />
-      <circle cx="236" cy="74" r="6" className="fill-accent stroke-surface" strokeWidth="3" />
-    </svg>
-  )
-}
+const ACTIVE_STATUSES = ['requested', 'accepted', 'driver_arriving', 'trip_started']
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
+const shortDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const shortTime = (d) => new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
 export default function DriverDashboard() {
   const { user } = useAuth()
@@ -36,6 +24,10 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(null)
   const prevTripCount = useRef(0)
+  const [history, setHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [vehicle, setVehicle] = useState(user?.vehicle ?? null)
+  const [profileLoading, setProfileLoading] = useState(true)
 
   // Promise chain so state is only set in async callbacks.
   const fetchAvailableTrips = () =>
@@ -57,6 +49,33 @@ export default function DriverDashboard() {
     return () => clearInterval(interval)
   }, [])
 
+  // The driver's own trips, for real earnings and the recent trips list.
+  const fetchHistory = useCallback(() =>
+    API.get('/trips/history')
+      .then(res => setHistory(Array.isArray(res.data) ? res.data : []))
+      .catch(err => console.error(err))
+      .finally(() => setHistoryLoading(false)),
+  [])
+
+  // Fresh profile, for the vehicle on file.
+  const fetchProfile = useCallback(() =>
+    API.get('/auth/me')
+      .then(res => setVehicle(res.data?.user?.vehicle ?? null))
+      .catch(err => console.error(err))
+      .finally(() => setProfileLoading(false)),
+  [])
+
+  useEffect(() => {
+    fetchHistory()
+    fetchProfile()
+  }, [fetchHistory, fetchProfile])
+
+  const summary = tripSummary(history)
+  const sortedHistory = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const recentTrips = sortedHistory.slice(0, 5)
+  const activeTrip = sortedHistory.find(t => ACTIVE_STATUSES.includes(t.status) && t.status !== 'requested')
+  const hasVehicle = !!(vehicle && (vehicle.make || vehicle.model || vehicle.plateNumber))
+
   const handleAccept = async (tripId) => {
     setAccepting(tripId)
     try {
@@ -71,6 +90,7 @@ export default function DriverDashboard() {
 
   const quickActions = [
     { icon: History, label: 'Trip History', path: '/driver/activity' },
+    { icon: BarChart3, label: 'Analytics', path: '/driver/analytics' },
     { icon: Flag, label: 'My Disputes', path: '/driver/disputes' },
     { icon: Settings, label: 'Settings', path: '/driver/settings' },
   ]
@@ -102,13 +122,34 @@ export default function DriverDashboard() {
   return (
     <AppShell
       title={`Welcome back, ${user?.name?.split(' ')[0] ?? ''}`}
-      subtitle="Your vehicle is ready and the city is active."
+      subtitle={isOnline ? 'You are online. New trip requests appear below.' : 'You are offline. Go online to see trip requests.'}
       actions={availabilityToggle}
     >
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
         {/* Left column */}
         <div className="min-w-0 space-y-6 lg:col-span-2">
+
+          {/* Trip in progress */}
+          {activeTrip && (
+            <button
+              type="button"
+              onClick={() => navigate(`/driver/trip/${activeTrip._id}`)}
+              className="card group flex w-full items-center gap-3 border-accent/30 bg-accent-soft/50 px-5 py-4 text-left transition-colors hover:bg-accent-soft sm:px-6"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-white dark:text-canvas">
+                <CarFront className="h-4 w-4" strokeWidth={1.75} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-ink">You have a trip in progress</span>
+                <span className="block truncate text-xs text-ink-muted">
+                  {activeTrip.rider?.name ? `${activeTrip.rider.name} · ` : ''}{activeTrip.pickupLocation} to {activeTrip.destination}
+                </span>
+              </span>
+              <span className="hidden shrink-0 sm:block"><StatusBadge status={activeTrip.status} /></span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-accent-text transition-transform group-hover:translate-x-0.5" />
+            </button>
+          )}
 
           {/* Earnings */}
           <section className="card">
@@ -123,20 +164,32 @@ export default function DriverDashboard() {
             />
             <dl className="mt-4 grid grid-cols-1 divide-y divide-line border-t border-line sm:grid-cols-2 sm:divide-x sm:divide-y-0">
               <div className="min-w-0 px-5 py-5 sm:px-6">
-                <dt className="eyebrow">Daily Earnings</dt>
-                <dd className="stat-value mt-3">₦342.50</dd>
-                <dd className="mt-2 flex items-center gap-1.5 text-xs text-success">
-                  <TrendingUp className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  +12% vs yesterday
-                </dd>
+                <dt className="eyebrow">Today</dt>
+                {historyLoading ? (
+                  <dd><Skeleton className="mt-3 h-7 w-28" /></dd>
+                ) : (
+                  <>
+                    <dd className="stat-value mt-3">{naira(summary.today)}</dd>
+                    <dd className="mt-2 flex items-center gap-1.5 text-xs text-ink-subtle">
+                      <CarFront className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      {plural(summary.tripsToday, 'trip')} completed today
+                    </dd>
+                  </>
+                )}
               </div>
               <div className="min-w-0 px-5 py-5 sm:px-6">
-                <dt className="eyebrow">Weekly Total</dt>
-                <dd className="stat-value mt-3">₦2,840.12</dd>
-                <dd className="mt-2 flex items-center gap-1.5 text-xs text-ink-subtle">
-                  <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  6 days completed
-                </dd>
+                <dt className="eyebrow">This week</dt>
+                {historyLoading ? (
+                  <dd><Skeleton className="mt-3 h-7 w-28" /></dd>
+                ) : (
+                  <>
+                    <dd className="stat-value mt-3">{naira(summary.week)}</dd>
+                    <dd className="mt-2 flex items-center gap-1.5 text-xs text-ink-subtle">
+                      <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      {plural(summary.tripsThisWeek, 'trip')} completed since Monday
+                    </dd>
+                  </>
+                )}
               </div>
             </dl>
           </section>
@@ -157,7 +210,7 @@ export default function DriverDashboard() {
                       Live
                     </span>
                   )}
-                  <span className="badge badge-accent tabular-nums">{trips.length} nearby</span>
+                  <span className="badge badge-accent tabular-nums">{trips.length} open</span>
                 </div>
               }
             />
@@ -255,59 +308,106 @@ export default function DriverDashboard() {
         {/* Right column */}
         <div className="min-w-0 space-y-6">
 
-          {/* City heatmap */}
+          {/* Recent trips */}
           <section className="card overflow-hidden">
-            <div className="relative h-40 border-b border-line">
-              <DemandMap />
-              <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2 py-0.5 text-xs font-medium text-accent-text shadow-xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                High demand area
-              </span>
-            </div>
-            <div className="card-pad">
-              <h2 className="text-[15px] font-semibold text-ink">City Heatmap</h2>
-              <p className="mt-1 text-sm text-ink-muted">Earnings are currently 1.5x higher downtown.</p>
-              <button className="btn btn-secondary btn-sm mt-4 w-full">
-                <MapIcon className="h-3.5 w-3.5" strokeWidth={1.75} />
-                Open Full Map
-              </button>
-            </div>
+            <SectionHeader
+              className="px-5 pt-5 sm:px-6 sm:pt-6"
+              title="Recent trips"
+              action={
+                <button type="button" onClick={() => navigate('/driver/activity')} className="btn btn-ghost btn-sm -mr-2">
+                  View all
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </button>
+              }
+            />
+            {historyLoading ? (
+              <div className="space-y-2 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-12" />)}
+              </div>
+            ) : recentTrips.length === 0 ? (
+              <p className="mt-3 border-t border-line px-5 py-6 text-center text-[13px] text-ink-muted sm:px-6">
+                No trips yet. Trips you accept will show up here.
+              </p>
+            ) : (
+              <ul className="mt-3 divide-y divide-line border-t border-line">
+                {recentTrips.map(trip => {
+                  const active = ACTIVE_STATUSES.includes(trip.status)
+                  const body = (
+                    <>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-ink">{trip.destination}</p>
+                        <p className="mt-0.5 truncate text-xs text-ink-subtle tabular-nums">
+                          {trip.rider?.name ? `${trip.rider.name} · ` : ''}{shortDate(trip.createdAt)}, {shortTime(trip.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {trip.status === 'completed' && trip.fare
+                          ? <span className="text-sm font-semibold text-ink tabular-nums">{naira(trip.fare)}</span>
+                          : null}
+                        <StatusBadge status={trip.status} />
+                      </div>
+                      {active && <ChevronRight className="h-4 w-4 shrink-0 text-accent-text transition-transform group-hover:translate-x-0.5" />}
+                    </>
+                  )
+                  return (
+                    <li key={trip._id}>
+                      {active ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/driver/trip/${trip._id}`)}
+                          aria-label={`Open active trip to ${trip.destination}`}
+                          className="group flex w-full items-center gap-3 bg-accent-soft/40 px-5 py-3 text-left transition-colors hover:bg-accent-soft/70 sm:px-6"
+                        >
+                          {body}
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-3 px-5 py-3 sm:px-6">{body}</div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </section>
 
-          {/* Vehicle health */}
+          {/* Vehicle on file */}
           <section className="card card-pad">
             <SectionHeader
-              title="Vehicle Health"
+              title="Your vehicle"
               action={
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted">
-                  <Gauge className="h-4 w-4" strokeWidth={1.75} />
+                  <CarFront className="h-4 w-4" strokeWidth={1.75} />
                 </span>
               }
             />
-            <div className="mt-5 space-y-4">
-              <div>
-                <div className="mb-2 flex justify-between text-[13px]">
-                  <span className="text-ink-muted">Fuel Level</span>
-                  <span className="font-medium text-ink tabular-nums">85%</span>
+            {profileLoading && !hasVehicle ? (
+              <div className="mt-4 space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-5" />)}</div>
+            ) : hasVehicle ? (
+              <dl className="mt-4 space-y-3 text-sm">
+                {[
+                  ['Make', vehicle.make],
+                  ['Model', vehicle.model],
+                  ['Year', vehicle.year],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <dt className="text-ink-muted">{label}</dt>
+                    <dd className="min-w-0 truncate font-medium text-ink tabular-nums">{value || '—'}</dd>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-ink-muted">Plate number</dt>
+                  <dd>
+                    {vehicle.plateNumber
+                      ? <span className="rounded-md border border-line-strong bg-surface-2 px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-wider text-ink">{vehicle.plateNumber}</span>
+                      : <span className="font-medium text-ink">—</span>}
+                  </dd>
                 </div>
-                <div className="h-1.5 rounded-full bg-surface-3">
-                  <div className="h-1.5 rounded-full bg-accent" style={{ width: '85%' }} />
-                </div>
-              </div>
-              <div>
-                <div className="mb-2 flex justify-between text-[13px]">
-                  <span className="text-ink-muted">Tire Pressure</span>
-                  <span className="font-medium text-success">Optimal</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-surface-3">
-                  <div className="h-1.5 w-full rounded-full bg-success" />
-                </div>
-              </div>
-            </div>
-            <p className="mt-5 flex items-center gap-2 border-t border-line pt-4 text-xs text-ink-subtle">
-              <Wrench className="h-3.5 w-3.5" strokeWidth={1.75} />
-              <span>Next service in <span className="tabular-nums">1,240</span> miles</span>
-            </p>
+              </dl>
+            ) : (
+              <p className="mt-3 text-[13px] text-ink-muted">
+                No vehicle details on file yet. They are recorded when you register as a driver; contact support if yours are missing or need updating.
+              </p>
+            )}
           </section>
 
           {/* Quick actions */}

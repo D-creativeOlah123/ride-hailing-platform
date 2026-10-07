@@ -1,13 +1,36 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  X, Share2, Star, MessageSquare, Phone, Search, Check, MapPin, CornerUpRight, Clock, Wallet,
+  X, Share2, MessageSquare, Phone, Search, Check, MapPin, Navigation, Clock, Wallet, CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
-import { Avatar, SectionHeader, Spinner } from '../../components/ui'
+import { Avatar, SectionHeader, Spinner, ComingSoon } from '../../components/ui'
 import { TripChatPanel, UnreadBadge } from '../../components/TripChat'
 import { useTripChat } from '../../components/useTripChat'
 import API from '../../api'
+import { naira, vehicleLabel } from '../../utils/tripStats'
+
+const STATUS_LABEL = {
+  requested: 'Requested',
+  accepted: 'Accepted',
+  driver_arriving: 'Driver arriving',
+  trip_started: 'Trip started',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+}
+
+// Honest, status-based progress text (there is no live GPS data).
+function statusMessage(trip) {
+  switch (trip?.status) {
+    case 'requested': return 'Looking for a driver'
+    case 'accepted': return 'Driver is on the way to your pickup'
+    case 'driver_arriving': return 'Your driver is arriving at the pickup point'
+    case 'trip_started': return `On your way to ${trip.destination}`
+    case 'completed': return `Arrived at ${trip.destination}`
+    case 'cancelled': return 'This trip was cancelled'
+    default: return 'Waiting for trip details'
+  }
+}
 
 // Restrained route placeholder (street grid + route line).
 function RouteMap() {
@@ -42,6 +65,10 @@ export default function ActiveTrip() {
   const [cancelling, setCancelling] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
   const closeChat = useCallback(() => setChatOpen(false), [])
+  const [shareNote, setShareNote] = useState(null) // { tone: 'success' | 'danger', text }
+  const shareTimer = useRef(null)
+
+  useEffect(() => () => clearTimeout(shareTimer.current), [])
 
   // Promise chain so state is only set in async callbacks.
   const fetchTrip = useCallback(() =>
@@ -66,6 +93,36 @@ export default function ActiveTrip() {
       console.error(err)
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const showShareNote = (note) => {
+    clearTimeout(shareTimer.current)
+    setShareNote(note)
+    shareTimer.current = setTimeout(() => setShareNote(null), 3000)
+  }
+
+  const handleShare = async () => {
+    if (!trip?.driver) return
+    const vehicle = vehicleLabel(trip.driver.vehicle) || 'vehicle details unavailable'
+    const text = `I'm on a RideLink trip with ${trip.driver.name || 'my driver'} (${vehicle}) from ${trip.pickupLocation} to ${trip.destination}. Status: ${STATUS_LABEL[trip.status] || trip.status}.`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'My RideLink trip', text })
+        return
+      } catch (err) {
+        // User dismissed the share sheet: nothing else to do.
+        if (err?.name === 'AbortError') return
+        // Otherwise fall back to copying below.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text)
+      showShareNote({ tone: 'success', text: 'Trip details copied' })
+    } catch (err) {
+      console.error(err)
+      showShareNote({ tone: 'danger', text: "Couldn't copy trip details. Please try again." })
     }
   }
 
@@ -104,13 +161,28 @@ export default function ActiveTrip() {
               )}
             </button>
           )}
-          <button className="btn btn-secondary btn-sm">
-            <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Share Trip
-          </button>
+          <span className="inline-flex" title={trip?.driver ? 'Share your trip details' : 'Available once a driver is assigned'}>
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={!trip?.driver}
+              className="btn btn-secondary btn-sm">
+              <Share2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Share Trip
+            </button>
+          </span>
         </>
       }
     >
+      {shareNote && (
+        <div className={`alert ${shareNote.tone === 'success' ? 'alert-success' : 'alert-danger'} mb-5 animate-fade-in`} role="status">
+          {shareNote.tone === 'success'
+            ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+            : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />}
+          <span>{shareNote.text}</span>
+        </div>
+      )}
+
       {trip?.driver && (
         <TripChatPanel open={chatOpen} onClose={closeChat} chat={chat} otherName={trip.driver.name || 'Driver'} />
       )}
@@ -133,10 +205,7 @@ export default function ActiveTrip() {
                   <Avatar name={trip.driver.name || ''} className="h-12 w-12 text-base" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-semibold text-ink">{trip.driver.name}</p>
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
-                      <Star className="h-3.5 w-3.5 fill-warning text-warning" strokeWidth={1.75} />
-                      <span className="tabular-nums">4.98</span>
-                    </p>
+                    <p className="mt-0.5 text-xs text-ink-muted">Your driver</p>
                   </div>
                   <button type="button" onClick={() => setChatOpen(true)} className="btn btn-secondary btn-icon btn-sm relative shrink-0" aria-label="Message driver">
                     <MessageSquare className="h-4 w-4" strokeWidth={1.75} />
@@ -147,11 +216,13 @@ export default function ActiveTrip() {
                 <dl className="mt-5 grid grid-cols-2 divide-x divide-line rounded-lg border border-line">
                   <div className="min-w-0 px-3.5 py-3">
                     <dt className="text-xs text-ink-subtle">Phone</dt>
-                    <dd className="mt-0.5 truncate text-sm font-medium text-ink tabular-nums">{trip.driver.phone}</dd>
+                    <dd className="mt-0.5 truncate text-sm font-medium text-ink tabular-nums">{trip.driver.phone || '—'}</dd>
                   </div>
                   <div className="min-w-0 px-3.5 py-3">
                     <dt className="text-xs text-ink-subtle">Vehicle</dt>
-                    <dd className="mt-0.5 truncate text-sm font-medium text-ink">Tesla Model S</dd>
+                    <dd className="mt-0.5 truncate text-sm font-medium text-ink" title={vehicleLabel(trip.driver.vehicle) || undefined}>
+                      {vehicleLabel(trip.driver.vehicle) || '—'}
+                    </dd>
                   </div>
                 </dl>
 
@@ -239,10 +310,10 @@ export default function ActiveTrip() {
             <section className="card overflow-hidden">
               <div className="relative aspect-[8/3]">
                 <RouteMap />
-                {trip?.status === 'driver_arriving' && (
+                {['accepted', 'driver_arriving', 'trip_started'].includes(trip?.status) && (
                   <div className="absolute left-1/2 top-4 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-xs font-medium text-white shadow-raised">
-                    <CornerUpRight className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                    <span className="truncate">Turn right on Montgomery St</span>
+                    <Navigation className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                    <span className="truncate">{statusMessage(trip)}</span>
                   </div>
                 )}
               </div>
@@ -250,10 +321,11 @@ export default function ActiveTrip() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted">
                   <MapPin className="h-4 w-4" strokeWidth={1.75} />
                 </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink">Live map tracking</p>
-                  <p className="text-xs text-ink-subtle">Driver is 3 minutes away</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">{statusMessage(trip)}</p>
+                  <p className="text-xs text-ink-subtle">Route preview only. Live map tracking isn't available yet.</p>
                 </div>
+                <ComingSoon className="hidden shrink-0 sm:inline-flex" />
               </div>
             </section>
 
@@ -281,9 +353,13 @@ export default function ActiveTrip() {
                 <div className="min-w-0 px-4 py-3">
                   <dt className="flex items-center gap-1.5 text-xs text-ink-subtle">
                     <Clock className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    Arrival Time
+                    Requested
                   </dt>
-                  <dd className="mt-1 text-sm font-semibold text-ink tabular-nums">~15 mins</dd>
+                  <dd className="mt-1 truncate text-sm font-semibold text-ink tabular-nums">
+                    {trip?.createdAt
+                      ? new Date(trip.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                      : '—'}
+                  </dd>
                 </div>
                 <div className="min-w-0 px-4 py-3">
                   <dt className="flex items-center gap-1.5 text-xs text-ink-subtle">
@@ -291,7 +367,7 @@ export default function ActiveTrip() {
                     Total Fare
                   </dt>
                   <dd className="mt-1 truncate text-sm font-semibold text-accent-text tabular-nums">
-                    {trip?.fare ? `₦${trip.fare}` : 'Calculating...'}
+                    {trip?.fare ? naira(trip.fare) : 'Calculating...'}
                   </dd>
                 </div>
               </dl>

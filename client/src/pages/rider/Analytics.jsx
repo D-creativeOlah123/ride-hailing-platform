@@ -1,34 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CarFront, Wallet, Receipt, CheckCircle2 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { StatCard, SectionHeader, Skeleton } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
 import API from '../../api'
+import { naira, tripSummary, monthlySeries } from '../../utils/tripStats'
 
 export default function Analytics() {
   const { user } = useAuth()
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const fetchTrips = useCallback(() =>
+    API.get('/trips/history')
+      .then(res => setTrips(Array.isArray(res.data) ? res.data : []))
+      .catch(console.error)
+      .finally(() => setLoading(false)),
+  [])
+
   useEffect(() => {
-    API.get('/trips/history').then(res => {
-      setTrips(res.data)
-    }).catch(console.error).finally(() => setLoading(false))
-  }, [])
+    fetchTrips()
+  }, [fetchTrips])
 
-  const completed = trips.filter(t => t.status === 'completed')
-  const cancelled = trips.filter(t => t.status === 'cancelled')
-  const totalSpent = completed.reduce((s, t) => s + (t.fare || 0), 0)
-  const avgFare = completed.length ? Math.round(totalSpent / completed.length) : 0
-  const completionRate = trips.length ? Math.round((completed.length / trips.length) * 100) : 0
+  const summary = tripSummary(trips)
+  const rateText = summary.completionRate === null ? '—' : `${summary.completionRate}%`
+  const avgFareText = summary.completed ? naira(summary.averageFare) : '—'
 
-  const barHeights = [30, 55, 40, 70, 50, 85, 60, 75, 45, 90, 65, 80]
-  const months = ['J','F','M','A','M','J','J','A','S','O','N','D']
+  // Last 12 calendar months of completed-trip fares, oldest first.
+  const series = monthlySeries(trips, 12)
+  const maxAmount = Math.max(0, ...series.map(m => m.amount))
+  const spendWord = user?.role === 'driver' ? 'earned' : 'spent'
+  const chartDescription = maxAmount
+    ? `Last 12 months · highest month ${naira(maxAmount)}`
+    : `Nothing ${spendWord} in the last 12 months yet`
 
+  const pctOf = (n) => (summary.total ? (n / summary.total) * 100 : 0)
   const breakdown = [
-    { label: 'Completed', value: completed.length, pct: trips.length ? (completed.length / trips.length) * 100 : 0, bar: 'bg-success' },
-    { label: 'Cancelled', value: cancelled.length, pct: trips.length ? (cancelled.length / trips.length) * 100 : 0, bar: 'bg-danger' },
-    { label: 'Completion rate', value: `${completionRate}%`, pct: completionRate, bar: 'bg-accent' },
+    { label: 'Completed', value: summary.completed, pct: pctOf(summary.completed), bar: 'bg-success' },
+    { label: 'Cancelled', value: summary.cancelled, pct: pctOf(summary.cancelled), bar: 'bg-danger' },
+    { label: 'Completion rate', value: rateText, pct: summary.completionRate || 0, bar: 'bg-accent' },
   ]
 
   return (
@@ -41,16 +51,24 @@ export default function Analytics() {
         <>
           {/* Stats */}
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Total Trips" value={trips.length} icon={CarFront} />
-            <StatCard label={user?.role === 'driver' ? 'Total Earned' : 'Total Spent'} value={`₦${totalSpent.toLocaleString()}`} icon={Wallet} />
-            <StatCard label="Avg Fare" value={`₦${avgFare}`} icon={Receipt} />
-            <StatCard label="Completion Rate" value={`${completionRate}%`} icon={CheckCircle2} />
+            <StatCard label="Total Trips" value={summary.total} icon={CarFront} />
+            <StatCard label={user?.role === 'driver' ? 'Total Earned' : 'Total Spent'} value={naira(summary.amount)} icon={Wallet} />
+            <StatCard label="Avg Fare" value={avgFareText} icon={Receipt} />
+            <StatCard
+              label="Completion Rate"
+              value={rateText}
+              icon={CheckCircle2}
+              hint={summary.completionRate === null ? undefined : `${summary.completed} of ${summary.completed + summary.cancelled} finished trips`}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Bar chart */}
             <section className="card card-pad min-w-0 lg:col-span-2">
-              <SectionHeader title={`${user?.role === 'driver' ? 'Earnings' : 'Spending'} Over Time`} />
+              <SectionHeader
+                title={`${user?.role === 'driver' ? 'Earnings' : 'Spending'} Over Time`}
+                description={chartDescription}
+              />
 
               <div className="relative mt-6 h-44">
                 {/* Grid lines */}
@@ -59,20 +77,26 @@ export default function Analytics() {
                     <div key={i} className={`border-t ${i === 3 ? 'border-line-strong' : 'border-dashed border-line'}`} />
                   ))}
                 </div>
-                <div className="relative flex h-full items-end gap-1.5 sm:gap-2.5">
-                  {barHeights.map((h, i) => (
-                    <div key={i} className="flex h-full flex-1 items-end justify-center">
+                <ul className="relative flex h-full items-end gap-1.5 sm:gap-2.5">
+                  {series.map(m => (
+                    <li key={m.key} className="flex h-full flex-1 items-end justify-center">
                       <div
-                        className="w-full max-w-[32px] cursor-pointer rounded-t-[3px] bg-accent/85 transition-colors hover:bg-accent"
-                        style={{ height: `${h}%` }}
-                      />
-                    </div>
+                        className="w-full max-w-[32px] rounded-t-[3px] bg-accent/85 transition-colors hover:bg-accent"
+                        style={{ height: maxAmount ? `${(m.amount / maxAmount) * 100}%` : '0%' }}
+                        title={`${m.label}: ${naira(m.amount)} · ${m.completed} completed`}
+                      >
+                        <span className="sr-only">{`${m.label}: ${naira(m.amount)} ${spendWord}, ${m.completed} completed trips`}</span>
+                      </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
-              <div className="mt-2 flex gap-1.5 sm:gap-2.5">
-                {months.map((m, i) => (
-                  <span key={i} className="flex-1 text-center text-2xs text-ink-subtle">{m}</span>
+              <div className="mt-2 flex gap-1.5 sm:gap-2.5" aria-hidden="true">
+                {series.map(m => (
+                  <span key={m.key} className="flex-1 text-center text-2xs text-ink-subtle">
+                    <span className="sm:hidden">{m.label[0]}</span>
+                    <span className="hidden sm:inline">{m.label}</span>
+                  </span>
                 ))}
               </div>
             </section>
@@ -98,15 +122,15 @@ export default function Analytics() {
               <dl className="mt-6 space-y-3 border-t border-line pt-5 text-sm">
                 <div className="flex items-center justify-between">
                   <dt className="text-ink-muted">Total trips</dt>
-                  <dd className="font-semibold text-ink tabular-nums">{trips.length}</dd>
+                  <dd className="font-semibold text-ink tabular-nums">{summary.total}</dd>
                 </div>
                 <div className="flex items-center justify-between">
                   <dt className="text-ink-muted">Avg fare</dt>
-                  <dd className="font-semibold text-ink tabular-nums">₦{avgFare}</dd>
+                  <dd className="font-semibold text-ink tabular-nums">{avgFareText}</dd>
                 </div>
                 <div className="flex items-center justify-between">
                   <dt className="text-ink-muted">Total {user?.role === 'driver' ? 'earned' : 'spent'}</dt>
-                  <dd className="font-semibold text-accent-text tabular-nums">₦{totalSpent.toLocaleString()}</dd>
+                  <dd className="font-semibold text-accent-text tabular-nums">{naira(summary.amount)}</dd>
                 </div>
               </dl>
             </section>

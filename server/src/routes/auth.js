@@ -22,9 +22,16 @@ const sessionFor = (user) => ({
         name: user.name,
         email: user.email,
         role: user.role,
-        isApproved: user.isApproved
+        isApproved: user.isApproved,
+        phone: user.phone || '',
+        vehicle: user.vehicle || null
     }
 })
+
+const publicUser = (user) => sessionFor(user).user
+
+// Loose phone check: digits with optional +, spaces or dashes; 7-15 digits in total
+const validPhone = (phone) => /^\+?[\d\s-]{7,20}$/.test(phone) && phone.replace(/\D/g, '').length >= 7 && phone.replace(/\D/g, '').length <= 15
 
 // Register
 router.post('/register', async (req, res) => {
@@ -217,6 +224,71 @@ router.post('/google', async (req, res) => {
         }
 
         res.json(sessionFor(user))
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message })
+    }
+})
+
+// Current user's profile
+router.get('/me', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+        if (!user) return res.status(404).json({ message: 'Account not found' })
+        res.json({ user: publicUser(user) })
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message })
+    }
+})
+
+// Update name and phone (email and role can't be changed here)
+router.patch('/me', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+        if (!user) return res.status(404).json({ message: 'Account not found' })
+
+        const { name, phone } = req.body
+        if (name !== undefined) {
+            const clean = String(name).trim()
+            if (clean.length < 2 || clean.length > 80) return res.status(400).json({ message: 'Name must be 2-80 characters' })
+            user.name = clean
+        }
+        if (phone !== undefined) {
+            const clean = String(phone).trim()
+            if (clean && !validPhone(clean)) return res.status(400).json({ message: 'Enter a valid phone number' })
+            if (!clean && !user.googleId) return res.status(400).json({ message: 'Phone number is required' })
+            user.phone = clean || undefined
+        }
+        await user.save()
+        res.json({ message: 'Profile updated', user: publicUser(user) })
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message })
+    }
+})
+
+// Change password while signed in
+router.post('/change-password', protect, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body
+        if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+            return res.status(400).json({ message: 'New password must be at least 8 characters' })
+        }
+        const user = await User.findById(req.user.id)
+        if (!user) return res.status(404).json({ message: 'Account not found' })
+
+        const ok = typeof currentPassword === 'string' && await bcrypt.compare(currentPassword, user.password)
+        if (!ok) {
+            return res.status(400).json({
+                message: user.googleId
+                    ? 'Current password is incorrect. If you signed up with Google, use "Forgot password?" on the sign-in page to set one.'
+                    : 'Current password is incorrect'
+            })
+        }
+        if (await bcrypt.compare(newPassword, user.password)) {
+            return res.status(400).json({ message: 'New password must be different from the current one' })
+        }
+        user.password = await bcrypt.hash(newPassword, 10)
+        await user.save()
+        res.json({ message: 'Password updated' })
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message })
     }

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import AuthLayout from '../../components/AuthLayout'
-import { Spinner } from '../../components/ui'
+import { Spinner, ComingSoon } from '../../components/ui'
 import GoogleButton from '../../components/GoogleButton'
 import API from '../../api'
 
@@ -105,11 +105,6 @@ export default function Login() {
           </div>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-muted">
-          <input type="checkbox" className="h-4 w-4 rounded border-line-strong accent-[rgb(var(--accent))]" />
-          Remember me
-        </label>
-
         <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
           {loading ? <><Spinner /> Signing in…</> : 'Sign In'}
         </button>
@@ -123,8 +118,10 @@ export default function Login() {
 
       <div className="grid grid-cols-2 gap-3">
         <GoogleButton onError={setError} />
-        <button type="button" className="btn btn-secondary">
+        <button type="button" disabled title="Coming soon" className="btn btn-secondary relative">
           <AppleIcon /> Apple
+          {/* Corner tag so it fits beside the label even at phone widths. */}
+          <ComingSoon className="absolute -top-2.5 right-2 px-1.5 py-0 shadow-xs" />
         </button>
       </div>
     </AuthLayout>

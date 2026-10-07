@@ -108,6 +108,11 @@ export function Skeleton({ className = 'h-14' }) {
   return <div className={`animate-pulse rounded-lg bg-surface-2 ${className}`} />
 }
 
+/** Small neutral label for features that aren't available yet. */
+export function ComingSoon({ className = '' }) {
+  return <span className={`badge badge-neutral whitespace-nowrap text-[11px] ${className}`}>Coming soon</span>
+}
+
 export function Avatar({ name = '', className = 'h-8 w-8 text-xs' }) {
   const initials = name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'
   return (

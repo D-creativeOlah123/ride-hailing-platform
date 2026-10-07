@@ -4,7 +4,7 @@ import {
   AlertCircle, AlertTriangle, CheckCircle2, Flag,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
-import { StatusBadge, EmptyState, Spinner } from '../../components/ui'
+import { StatusBadge, EmptyState, Spinner, ComingSoon } from '../../components/ui'
 import API from '../../api'
 
 const TAB_ICONS = {
@@ -12,10 +12,18 @@ const TAB_ICONS = {
   'my disputes': Inbox,
 }
 
+// Optional category; the chosen title is prefixed to the description, e.g. "[Fare Discrepancy] ...".
+const CATEGORIES = [
+  { icon: CreditCard, title: 'Fare Discrepancy', desc: 'Unexpected charges, incorrect tolls, or base fare information.' },
+  { icon: Star, title: 'Service Quality', desc: 'Driver professionalism, vehicle cleanliness, or route safety.' },
+]
+
 export default function RiderDisputes() {
   const [trips, setTrips] = useState([])
   const [disputes, setDisputes] = useState([])
   const [form, setForm] = useState({ tripId: '', description: '' })
+  const [category, setCategory] = useState('')
+  const [certified, setCertified] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
@@ -38,13 +46,16 @@ export default function RiderDisputes() {
   }, [])
 
   const handleSubmit = async () => {
-    if (!form.tripId || !form.description) return
+    if (!form.tripId || !form.description || !certified) return
     setLoading(true)
     setError('')
     try {
-      await API.post('/disputes/submit', form)
+      const description = category ? `[${category}] ${form.description}` : form.description
+      await API.post('/disputes/submit', { tripId: form.tripId, description })
       setSuccess('Dispute submitted successfully!')
       setForm({ tripId: '', description: '' })
+      setCategory('')
+      setCertified(false)
       fetchData()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
@@ -124,25 +135,39 @@ export default function RiderDisputes() {
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" strokeWidth={1.75} />
                 </div>
-                <p className="hint">Only trips within the last 30 days are eligible.</p>
+                <p className="hint">Only completed trips can be disputed.</p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {[
-                  { icon: CreditCard, title: 'Fare Discrepancy', desc: 'Unexpected charges, incorrect tolls, or base fare information.' },
-                  { icon: Star, title: 'Service Quality', desc: 'Driver professionalism, vehicle cleanliness, or route safety.' },
-                ].map(({ icon: Icon, title, desc }) => (
-                  <div key={title} className="flex cursor-pointer gap-3 rounded-lg border border-line bg-surface p-4 transition-colors hover:border-line-strong hover:bg-surface-2/50">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted">
-                      <Icon className="h-4 w-4" strokeWidth={1.75} />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-ink">{title}</p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <fieldset>
+                <legend className="label">Category <span className="font-normal text-ink-subtle">(optional)</span></legend>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {CATEGORIES.map(({ icon: Icon, title, desc }) => {
+                    const active = category === title
+                    return (
+                      <button
+                        key={title}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setCategory(active ? '' : title)}
+                        className={`flex gap-3 rounded-lg border p-4 text-left transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-accent/15 ${
+                          active
+                            ? 'border-accent bg-accent/[0.04]'
+                            : 'border-line bg-surface hover:border-line-strong hover:bg-surface-2/50'
+                        }`}>
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
+                          active ? 'border-accent/20 bg-accent-soft text-accent-text' : 'border-line bg-surface-2 text-ink-muted'
+                        }`}>
+                          <Icon className="h-4 w-4" strokeWidth={1.75} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-ink">{title}</span>
+                          <span className="mt-0.5 block text-xs leading-relaxed text-ink-muted">{desc}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </fieldset>
 
               <div>
                 <label htmlFor="dispute-description" className="label">
@@ -164,18 +189,19 @@ export default function RiderDisputes() {
                 )}
               </div>
 
-              <div className="group cursor-pointer rounded-lg border border-dashed border-line-strong bg-surface-2/40 px-6 py-7 text-center transition-colors hover:border-accent/50 hover:bg-accent/[0.03]">
-                <span className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-muted shadow-xs group-hover:text-accent-text">
+              <div className="rounded-lg border border-dashed border-line bg-surface-2/40 px-6 py-7 text-center" aria-disabled="true">
+                <span className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-subtle shadow-xs">
                   <UploadCloud className="h-4 w-4" strokeWidth={1.75} />
                 </span>
-                <p className="text-sm text-ink-muted">
-                  <span className="font-medium text-ink">Click to upload</span> or drag & drop
+                <p className="flex flex-wrap items-center justify-center gap-2 text-sm font-medium text-ink-muted">
+                  Evidence upload <ComingSoon />
                 </p>
-                <p className="mt-1 text-xs text-ink-subtle">PNG, JPG or PDF (max. 5MB)</p>
+                <p className="mt-1 text-xs text-ink-subtle">For now, include all the details in the description above.</p>
               </div>
 
               <label className="flex cursor-pointer items-start gap-3">
-                <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 rounded border-line-strong accent-[rgb(var(--accent))]" />
+                <input type="checkbox" checked={certified} onChange={e => setCertified(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-line-strong accent-[rgb(var(--accent))]" />
                 <span className="text-xs leading-relaxed text-ink-muted">
                   I certify that the information provided is accurate and I understand that fraudulent claims may result in account suspension.
                 </span>
@@ -184,7 +210,7 @@ export default function RiderDisputes() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading || !form.tripId || form.description.length < 50}
+                disabled={loading || !form.tripId || form.description.length < 50 || !certified}
                 className="btn btn-primary btn-lg w-full">
                 {loading ? <><Spinner /> Submitting...</> : 'Submit Dispute Review'}
               </button>

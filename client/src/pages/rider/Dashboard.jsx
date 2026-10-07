@@ -1,35 +1,39 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Navigation, CarFront, Wallet, XCircle, History, BarChart3, Flag, Settings,
-  ChevronRight, MapPin, Search, CheckCircle2, Award, ArrowRight,
+  ChevronRight, MapPin, Search, CheckCircle2, CalendarDays, ArrowRight,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { StatCard, StatusBadge, SectionHeader, EmptyState, Skeleton, Spinner } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
 import API from '../../api'
+import { naira, tripSummary, monthlySeries, monthOverMonth } from '../../utils/tripStats'
 
 export default function RiderDashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [pickup, setPickup] = useState('')
   const [destination, setDestination] = useState('')
-  const [recentTrips, setRecentTrips] = useState([])
+  const [trips, setTrips] = useState([])
+  const pickupRef = useRef(null)
   // Starts true: the trips are fetched on mount.
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(false)
   const [bookingStep, setBookingStep] = useState(0)
 
   // Promise chain so state is only set in async callbacks.
-  const fetchRecentTrips = () =>
+  // Keep the full history: stats need every trip, Recent Trips shows the latest 5.
+  const fetchTrips = useCallback(() =>
     API.get('/trips/history')
-      .then(res => setRecentTrips(res.data.slice(0, 5)))
+      .then(res => setTrips(Array.isArray(res.data) ? res.data : []))
       .catch(err => console.error(err))
-      .finally(() => setLoading(false))
+      .finally(() => setLoading(false)),
+  [])
 
   useEffect(() => {
-    fetchRecentTrips()
-  }, [])
+    fetchTrips()
+  }, [fetchTrips])
 
   const handleBookRide = async () => {
     if (!pickup || !destination) return
@@ -52,12 +56,13 @@ export default function RiderDashboard() {
     }
   }
 
-  const totalSpent = recentTrips
-    .filter(t => t.status === 'completed')
-    .reduce((sum, t) => sum + (t.fare || 0), 0)
-
-  const totalTrips = recentTrips.length
-  const cancelled = recentTrips.filter(t => t.status === 'cancelled').length
+  // History comes back newest first.
+  const recentTrips = trips.slice(0, 5)
+  const summary = tripSummary(trips)
+  const series = monthlySeries(trips, 2)
+  const tripsChange = monthOverMonth(series, 'trips')
+  const thisMonth = series[series.length - 1]
+  const monthName = new Date().toLocaleString('en-US', { month: 'long' })
 
   const bookingSteps = [
     { icon: MapPin, label: 'Confirming your location…' },
@@ -136,6 +141,7 @@ export default function RiderDashboard() {
                 <label htmlFor="pickup" className="sr-only">Pickup location</label>
                 <input
                   id="pickup"
+                  ref={pickupRef}
                   type="text"
                   placeholder="Current Location"
                   value={pickup}
@@ -167,9 +173,24 @@ export default function RiderDashboard() {
 
           {/* Stats */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard label="Total trips" value={totalTrips} icon={CarFront} hint="+12% from last month" hintTone="success" />
-            <StatCard label="Amount spent" value={`₦${totalSpent.toLocaleString()}`} icon={Wallet} hint="Corporate billing enabled" />
-            <StatCard label="Cancelled" value={cancelled.toString().padStart(2, '0')} icon={XCircle} hint="98% reliability score" />
+            <StatCard
+              label="Total trips"
+              value={summary.total}
+              icon={CarFront}
+              hint={tripsChange === null ? undefined : `${tripsChange > 0 ? '+' : ''}${tripsChange}% trips vs last month`}
+            />
+            <StatCard
+              label="Amount spent"
+              value={naira(summary.amount)}
+              icon={Wallet}
+              hint={`Across ${summary.completed} completed ${summary.completed === 1 ? 'trip' : 'trips'}`}
+            />
+            <StatCard
+              label="Cancelled"
+              value={summary.cancelled.toString().padStart(2, '0')}
+              icon={XCircle}
+              hint={summary.completionRate === null ? undefined : `${summary.completionRate}% completion rate`}
+            />
           </div>
 
           {/* Recent trips */}
@@ -212,7 +233,7 @@ export default function RiderDashboard() {
                           <p className="text-xs text-ink-subtle">{new Date(trip.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
-                          {trip.fare && <span className="text-sm font-semibold text-ink tabular-nums">₦{trip.fare}</span>}
+                          {trip.fare ? <span className="text-sm font-semibold text-ink tabular-nums">{naira(trip.fare)}</span> : null}
                           <StatusBadge status={trip.status} />
                         </div>
                       </button>
@@ -226,7 +247,7 @@ export default function RiderDashboard() {
 
         {/* Right column */}
         <div className="min-w-0 space-y-6">
-          {/* Membership */}
+          {/* This month */}
           <section className="relative overflow-hidden rounded-xl bg-accent p-5 text-white shadow-raised sm:p-6">
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.1]"
@@ -240,22 +261,33 @@ export default function RiderDashboard() {
             />
             <div className="relative">
               <div className="flex items-center justify-between">
-                <span className="text-2xs font-medium uppercase tracking-eyebrow text-white/70">Active Membership</span>
-                <Award className="h-5 w-5 text-white/80" strokeWidth={1.75} />
+                <span className="text-2xs font-medium uppercase tracking-eyebrow text-white/70">This month</span>
+                <CalendarDays className="h-5 w-5 text-white/80" strokeWidth={1.75} />
               </div>
-              <p className="mt-3 text-xl font-semibold tracking-tight">Elite Platinum</p>
-              <div className="mt-5">
-                <div className="mb-2 flex justify-between text-xs">
-                  <span className="text-white/70">Next reward</span>
-                  <span className="font-medium tabular-nums">120 pts</span>
+              <p className="mt-3 text-xl font-semibold tracking-tight">{monthName}</p>
+              <dl className="mt-5 grid grid-cols-2 gap-3">
+                <div className="min-w-0 rounded-lg bg-white/10 px-3 py-2.5">
+                  <dt className="text-xs text-white/70">Trips</dt>
+                  <dd className="mt-0.5 text-lg font-semibold tabular-nums">{loading ? '—' : thisMonth.trips}</dd>
                 </div>
-                <div className="h-1.5 rounded-full bg-white/20">
-                  <div className="h-1.5 w-2/3 rounded-full bg-white" />
+                <div className="min-w-0 rounded-lg bg-white/10 px-3 py-2.5">
+                  <dt className="text-xs text-white/70">Spent</dt>
+                  <dd className="mt-0.5 truncate text-lg font-semibold tabular-nums">{loading ? '—' : naira(thisMonth.amount)}</dd>
                 </div>
-              </div>
+              </dl>
               <div className="mt-5 grid grid-cols-2 gap-2">
-                <button className="btn btn-sm bg-white/15 text-white hover:bg-white/25">Benefits</button>
-                <button className="btn btn-sm bg-white/15 text-white hover:bg-white/25">Manage</button>
+                <button
+                  type="button"
+                  onClick={() => pickupRef.current?.focus()}
+                  className="btn btn-sm bg-white/15 text-white hover:bg-white/25">
+                  Book a ride
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/rider/activity')}
+                  className="btn btn-sm bg-white/15 text-white hover:bg-white/25">
+                  View activity
+                </button>
               </div>
             </div>
           </section>

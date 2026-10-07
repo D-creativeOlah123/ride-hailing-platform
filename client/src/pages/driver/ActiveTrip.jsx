@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Star, Phone, MessageSquare, Siren, TriangleAlert, Navigation, CheckCircle2, Flag, Play, MapPin,
+  Phone, MessageSquare, Siren, TriangleAlert, Navigation, CheckCircle2, Flag, Play, MapPin, ExternalLink,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
-import { Avatar, Spinner } from '../../components/ui'
+import { Avatar, Spinner, StatusBadge, ComingSoon } from '../../components/ui'
 import { TripChatPanel, UnreadBadge } from '../../components/TripChat'
 import { useTripChat } from '../../components/useTripChat'
 import API from '../../api'
 
-// Restrained route placeholder (street grid + route line).
+// Decorative route illustration (street grid + route line). Not a live map.
 function RouteMap() {
   return (
     <svg viewBox="0 0 400 150" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -36,6 +36,19 @@ function RouteMap() {
 
 // Visual-only progress through the driver's trip actions.
 const PROGRESS_ORDER = ['accepted', 'driver_arriving', 'trip_started', 'completed']
+
+// What the driver should be doing now, based only on the trip status.
+const STATUS_GUIDE = {
+  requested: 'Waiting for the trip to be confirmed.',
+  accepted: 'Head to the pickup point. Tap “I’m Arriving” when you are close.',
+  driver_arriving: 'The rider has been told you are arriving. Start the trip once they are in the car.',
+  trip_started: 'Trip in progress. Drive to the destination, then complete the trip.',
+  completed: 'This trip is complete.',
+  cancelled: 'This trip was cancelled.',
+}
+
+const mapsLink = (place) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(place)}`
 
 export default function DriverActiveTrip() {
   const { id } = useParams()
@@ -79,12 +92,23 @@ export default function DriverActiveTrip() {
   const chat = useTripChat(id, !!trip)
   const riderPhone = trip?.rider?.phone
 
+  const handleEmergency = () => {
+    if (window.confirm('Call emergency services (112)?')) {
+      window.location.href = 'tel:112'
+    }
+  }
+
+  // Before pickup, navigate to the pickup point; after, to the destination.
+  const navTarget = trip?.status === 'trip_started' ? trip?.destination : trip?.pickupLocation
+  const navLabel = trip?.status === 'trip_started' ? 'destination' : 'pickup'
+  const tripOpen = trip && !['completed', 'cancelled'].includes(trip.status)
+
   return (
     <AppShell
       title={
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          Trip in Progress
-          <span className="badge badge-dot badge-accent text-xs font-medium tracking-normal">Active trip</span>
+          {trip?.status === 'completed' ? 'Trip Completed' : trip?.status === 'cancelled' ? 'Trip Cancelled' : 'Trip in Progress'}
+          {trip?.status && <StatusBadge status={trip.status} className="text-xs font-medium tracking-normal" />}
         </span>
       }
     >
@@ -105,9 +129,8 @@ export default function DriverActiveTrip() {
                 <Avatar name={trip?.rider?.name || ''} className="h-12 w-12 text-base" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-semibold text-ink">{trip?.rider?.name}</p>
-                  <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
-                    <Star className="h-3.5 w-3.5 fill-warning text-warning" strokeWidth={1.75} />
-                    <span className="tabular-nums">4.98</span>
+                  <p className="mt-0.5 truncate text-xs text-ink-muted tabular-nums">
+                    {riderPhone || 'Your rider'}
                   </p>
                 </div>
               </div>
@@ -152,7 +175,11 @@ export default function DriverActiveTrip() {
 
             <section className="card p-3">
               <div className="grid grid-cols-3 gap-2">
-                <button className="flex flex-col items-center gap-1.5 rounded-lg border border-danger/20 bg-danger/10 px-2 py-3 text-danger transition-colors hover:bg-danger/15">
+                <button
+                  type="button"
+                  onClick={handleEmergency}
+                  title="Call emergency services (112)"
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-danger/20 bg-danger/10 px-2 py-3 text-danger transition-colors hover:bg-danger/15">
                   <Siren className="h-4 w-4" strokeWidth={1.75} />
                   <span className="text-xs font-medium">Emergency</span>
                 </button>
@@ -164,7 +191,11 @@ export default function DriverActiveTrip() {
                   <Phone className="h-4 w-4" strokeWidth={1.75} />
                   <span className="text-xs font-medium">Call Rider</span>
                 </a>
-                <button className="flex flex-col items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-3 text-ink-muted transition-colors hover:border-line-strong hover:text-ink">
+                <button
+                  type="button"
+                  onClick={() => navigate('/driver/disputes')}
+                  title="Report an issue with this trip"
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-2 py-3 text-ink-muted transition-colors hover:border-line-strong hover:text-ink">
                   <TriangleAlert className="h-4 w-4" strokeWidth={1.75} />
                   <span className="text-xs font-medium">Issue</span>
                 </button>
@@ -175,14 +206,31 @@ export default function DriverActiveTrip() {
           {/* Right — map + trip actions */}
           <div className="min-w-0 space-y-6 lg:col-span-2">
             <section className="card overflow-hidden">
-              <div className="aspect-[8/3]">
+              <div className="relative aspect-[8/3]">
                 <RouteMap />
-              </div>
-              <div className="flex items-center gap-3 border-t border-line px-5 py-3.5 sm:px-6">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted">
-                  <Navigation className="h-4 w-4" strokeWidth={1.75} />
+                <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-md border border-line bg-surface px-2 py-1 text-xs font-medium text-ink-muted shadow-xs">
+                  Live map
+                  <ComingSoon />
                 </span>
-                <p className="min-w-0 text-sm font-medium text-ink">Live navigation active</p>
+              </div>
+              <div className="flex flex-col gap-3 border-t border-line px-5 py-3.5 sm:flex-row sm:items-center sm:px-6">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-muted">
+                    <Navigation className="h-4 w-4" strokeWidth={1.75} />
+                  </span>
+                  <p className="min-w-0 text-sm font-medium text-ink">{STATUS_GUIDE[trip?.status] || 'Loading trip status…'}</p>
+                </div>
+                {tripOpen && navTarget && (
+                  <a
+                    href={mapsLink(navTarget)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary btn-sm w-full shrink-0 sm:w-auto"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Directions to {navLabel}
+                  </a>
+                )}
               </div>
             </section>
 

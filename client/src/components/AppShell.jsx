@@ -94,7 +94,7 @@ export default function AppShell({ title, subtitle, actions, children }) {
             <p>© {new Date().getFullYear()} RideLink. Precision in Motion.</p>
             <nav className="flex gap-5" aria-label="Footer">
               <a href="mailto:eyinjueledumareadeyosola@gmail.com" className="hover:text-ink">Support</a>
-              <a href="#" className="hover:text-ink">Safety</a>
+              <a href="/#safety" className="hover:text-ink">Safety</a>
               <a href="/terms" className="hover:text-ink">Legal</a>
               <a href="/privacy" className="hover:text-ink">Privacy</a>
             </nav>

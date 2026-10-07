@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  Search, ChevronDown, Download, Flag, X, Check, ArrowUpRight, CheckCircle2, CalendarDays,
+  Search, ChevronDown, ChevronLeft, ChevronRight, Download, Flag, X, Check, ArrowUpRight, CheckCircle2, CalendarDays,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { StatusBadge, SectionHeader, EmptyState, Skeleton, Spinner, Avatar } from '../../components/ui'
@@ -12,6 +12,50 @@ const ACTION_BTN = {
   review: 'btn btn-sm btn-secondary',
   escalate: 'btn btn-sm border border-warning/25 bg-warning/10 text-warning hover:bg-warning/15',
   resolve: 'btn btn-sm border border-success/25 bg-success/10 text-success hover:bg-success/15',
+}
+
+const PAGE_SIZE = 10
+
+const pad2 = (n) => String(n).padStart(2, '0')
+const localDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+const localDateTime = (value) => {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${localDate(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+}
+
+// RFC 4180 quoting, plus a leading apostrophe on values a spreadsheet would run as a formula.
+const csvCell = (value) => {
+  let text = value == null ? '' : String(value)
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+function downloadDisputesCsv(rows) {
+  const header = ['ID', 'Date', 'Submitted by', 'Role', 'Email', 'Status', 'Trip pickup', 'Trip destination', 'Description', 'Resolution']
+  const lines = rows.map(d => [
+    d._id,
+    localDateTime(d.createdAt),
+    d.submittedBy?.name,
+    d.submittedBy?.role?.replace('_', ' '),
+    d.submittedBy?.email,
+    d.status?.replace('_', ' '),
+    d.trip?.pickupLocation,
+    d.trip?.destination,
+    d.description,
+    d.resolution,
+  ].map(csvCell).join(','))
+  // BOM so Excel opens the file as UTF-8 (₦, accented names).
+  const csv = String.fromCharCode(0xfeff) + [header.map(csvCell).join(','), ...lines].join('\r\n')
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `ridelink-disputes-${localDate(new Date())}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 const DOT = {
@@ -30,6 +74,7 @@ export default function AdminDisputes() {
   const [processing, setProcessing] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [page, setPage] = useState(1)
 
   // Promise chain so state is only set in async callbacks.
   const fetchDisputes = () =>
@@ -82,6 +127,11 @@ export default function AdminDisputes() {
     return matchSearch && matchStatus
   })
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount) // stays valid if a refresh shrinks the list
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const pageRows = filtered.slice(pageStart, pageStart + PAGE_SIZE)
+
   // Row-level action buttons, shared by the phone list and the table.
   const rowActions = (d) => (
     <>
@@ -121,7 +171,12 @@ export default function AdminDisputes() {
       title="Dispute Management"
       subtitle="Review and resolve active ride discrepancies."
       actions={
-        <button className="btn btn-primary">
+        <button
+          type="button"
+          onClick={() => downloadDisputesCsv(filtered)}
+          disabled={loading || filtered.length === 0}
+          title={filtered.length ? `Download ${filtered.length} dispute${filtered.length === 1 ? '' : 's'} as CSV` : 'No disputes to export'}
+          className="btn btn-primary">
           <Download className="h-4 w-4" strokeWidth={1.75} /> Export Report
         </button>
       }
@@ -141,7 +196,7 @@ export default function AdminDisputes() {
                 type="text"
                 placeholder="Search Trip ID or User..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => { setSearch(e.target.value); setPage(1) }}
                 className="input h-10 pl-10"
               />
             </div>
@@ -150,7 +205,7 @@ export default function AdminDisputes() {
               <select
                 id="dispute-status"
                 value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
+                onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
                 className="input h-10">
                 <option value="all">Status: All</option>
                 <option value="open">Open</option>
@@ -174,7 +229,7 @@ export default function AdminDisputes() {
               <>
                 {/* Phones: stacked list */}
                 <ul className="divide-y divide-line md:hidden">
-                  {filtered.map(d => (
+                  {pageRows.map(d => (
                     <li
                       key={d._id}
                       onClick={() => setSelected(d)}
@@ -213,7 +268,7 @@ export default function AdminDisputes() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map(d => (
+                      {pageRows.map(d => (
                         <tr key={d._id}
                           className={`table-row cursor-pointer ${selected?._id === d._id ? 'bg-surface-2/60' : ''}`}
                           onClick={() => setSelected(d)}>
@@ -247,15 +302,43 @@ export default function AdminDisputes() {
             )}
 
             {filtered.length > 0 && (
-              <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
+              <div className="flex flex-col gap-3 border-t border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <p className="text-xs text-ink-subtle tabular-nums">
-                  Showing {filtered.length} of {disputes.length} disputes
+                  {pageCount > 1
+                    ? <>Showing {pageStart + 1}–{pageStart + pageRows.length} of {filtered.length} disputes</>
+                    : <>Showing {filtered.length} of {disputes.length} disputes</>}
                 </p>
-                <div className="flex gap-1">
-                  <button className="btn btn-primary btn-sm btn-icon tabular-nums" aria-current="page">1</button>
-                  <button className="btn btn-ghost btn-sm btn-icon tabular-nums">2</button>
-                  <button className="btn btn-ghost btn-sm btn-icon tabular-nums">3</button>
-                </div>
+                {pageCount > 1 && (
+                  <nav className="flex flex-wrap items-center gap-1" aria-label="Disputes pages">
+                    <button
+                      type="button"
+                      onClick={() => setPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="btn btn-ghost btn-sm btn-icon"
+                      aria-label="Previous page">
+                      <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+                    </button>
+                    {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setPage(n)}
+                        aria-current={n === currentPage ? 'page' : undefined}
+                        aria-label={`Page ${n}`}
+                        className={`btn btn-sm btn-icon tabular-nums ${n === currentPage ? 'btn-primary' : 'btn-ghost'}`}>
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPage(currentPage + 1)}
+                      disabled={currentPage === pageCount}
+                      className="btn btn-ghost btn-sm btn-icon"
+                      aria-label="Next page">
+                      <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+                    </button>
+                  </nav>
+                )}
               </div>
             )}
           </div>
