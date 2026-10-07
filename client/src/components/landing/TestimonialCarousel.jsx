@@ -53,14 +53,14 @@ export default function TestimonialCarousel() {
         >
           {/* Track (clipped to the content width): card width per breakpoint leaves the next card peeking in */}
           <div className="-m-2 overflow-hidden p-2">
-          <ul
+          <div
             className={`flex gap-[var(--gap)] [--card:86%] [--gap:1rem] md:[--card:47%] lg:[--card:30.5%] lg:[--gap:1.5rem] ${reduced ? '' : 'transition-transform duration-500 ease-brand'}`}
             style={{ transform: `translateX(calc(${current} * -1 * (var(--card) + var(--gap))))` }}
           >
             {testimonials.map((t, i) => {
               const visible = i >= current && i < current + perView
               return (
-                <li
+                <div
                   key={t.name}
                   className="card flex w-[var(--card)] shrink-0 flex-col p-6 sm:p-7"
                   role="group"
@@ -70,7 +70,7 @@ export default function TestimonialCarousel() {
                   inert={!visible}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex gap-0.5" aria-label="5 out of 5 stars">
+                    <div className="flex gap-0.5" role="img" aria-label="5 out of 5 stars">
                       {Array.from({ length: 5 }).map((_, k) => <Star key={k} className="h-4 w-4 fill-warning text-warning" strokeWidth={0} />)}
                     </div>
                     <span className="badge badge-success"><BadgeCheck className="h-3.5 w-3.5" /> Verified ride</span>
@@ -83,10 +83,10 @@ export default function TestimonialCarousel() {
                       <p className="truncate text-[13px] text-ink-muted">{t.role}</p>
                     </div>
                   </div>
-                </li>
+                </div>
               )
             })}
-          </ul>
+          </div>
           </div>
 
           {positions > 1 && (
@@ -100,8 +100,11 @@ export default function TestimonialCarousel() {
                   aria-label={`Show testimonial ${i + 1}`}
                   onClick={() => goTo(i)}
                   {...controlProps}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? 'w-8 bg-accent' : 'w-3 bg-line-strong hover:bg-ink-subtle'}`}
-                />
+                  className="group flex h-6 items-center px-1"
+                >
+                  {/* Small bar, 24px-tall hit area */}
+                  <span className={`block h-1.5 rounded-full transition-all duration-300 ${i === current ? 'w-8 bg-accent' : 'w-3 bg-line-strong group-hover:bg-ink-subtle'}`} />
+                </button>
               ))}
             </div>
           )}

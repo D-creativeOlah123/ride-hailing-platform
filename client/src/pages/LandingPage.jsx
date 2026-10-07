@@ -1,20 +1,13 @@
+import { lazy, Suspense } from 'react'
 import Navbar from '../components/landing/Navbar'
 import HeroCarousel from '../components/landing/HeroCarousel'
 import TrustBar from '../components/landing/TrustBar'
-import LiveRideStrip from '../components/landing/LiveRideStrip'
-import ForRiders from '../components/landing/ForRiders'
-import HowItWorks from '../components/landing/HowItWorks'
-import RideOptions from '../components/landing/RideOptions'
-import SafetySection from '../components/landing/SafetySection'
-import ForDrivers from '../components/landing/ForDrivers'
-import CityCoverage from '../components/landing/CityCoverage'
-import Stats from '../components/landing/Stats'
-import TestimonialCarousel from '../components/landing/TestimonialCarousel'
-import Faq from '../components/landing/Faq'
-import AppDownloadCta from '../components/landing/AppDownloadCta'
-import Footer from '../components/landing/Footer'
 
 // Thin composition: each section lives in components/landing; copy and photos in landingContent.js.
+// Navbar, hero and trust bar render first; the rest of the page is a separate chunk.
+const BelowFoldSections = lazy(() => import('../components/landing/BelowFold').then(m => ({ default: m.BelowFoldSections })))
+const Footer = lazy(() => import('../components/landing/BelowFold').then(m => ({ default: m.Footer })))
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-canvas text-ink">
@@ -22,19 +15,13 @@ export default function LandingPage() {
       <main>
         <HeroCarousel />
         <TrustBar />
-        <LiveRideStrip />
-        <ForRiders />
-        <HowItWorks />
-        <RideOptions />
-        <SafetySection />
-        <ForDrivers />
-        <CityCoverage />
-        <Stats />
-        <TestimonialCarousel />
-        <Faq />
-        <AppDownloadCta />
+        <Suspense fallback={<div className="min-h-screen" aria-hidden="true" />}>
+          <BelowFoldSections />
+        </Suspense>
       </main>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
   )
 }

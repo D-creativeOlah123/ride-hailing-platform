@@ -6,7 +6,6 @@ import {
 import AppShell from '../../components/AppShell'
 import { StatusBadge, SectionHeader, EmptyState, Skeleton, Avatar } from '../../components/ui'
 import BarChart, { ChartLegend } from '../../components/BarChart'
-import { useAuth } from '../../context/AuthContext'
 import API from '../../api'
 
 // Full class names so Tailwind can find them.
@@ -44,7 +43,6 @@ function KpiCard({ label, value, change, tone, note, icon: Icon }) {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth()
   const navigate = useNavigate()
   const [stats, setStats] = useState({
     totalTrips: 0,
@@ -56,31 +54,29 @@ export default function AdminDashboard() {
   const [recentActivity, setRecentActivity] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchData = () =>
+    Promise.all([
+      API.get('/disputes/all'),
+      API.get('/admin/overview').catch(() => null),
+    ])
+      .then(([disputesRes, overviewRes]) => {
+        const disputes = disputesRes.data
+        if (overviewRes) setOverview(overviewRes.data)
+        setStats({
+          totalTrips: overviewRes?.data.trips.total ?? 0,
+          activeDisputes: disputes.filter(d => d.status === 'open' || d.status === 'under_review').length,
+          resolvedDisputes: disputes.filter(d => d.status === 'resolved').length,
+          escalatedDisputes: disputes.filter(d => d.status === 'escalated').length,
+        })
+        setRecentActivity(disputes.slice(0, 5))
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+
   useEffect(() => {
     fetchData()
   }, [])
-
-  const fetchData = async () => {
-    try {
-      const [disputesRes, overviewRes] = await Promise.all([
-        API.get('/disputes/all'),
-        API.get('/admin/overview').catch(() => null),
-      ])
-      const disputes = disputesRes.data
-      if (overviewRes) setOverview(overviewRes.data)
-      setStats({
-        totalTrips: overviewRes?.data.trips.total ?? 0,
-        activeDisputes: disputes.filter(d => d.status === 'open' || d.status === 'under_review').length,
-        resolvedDisputes: disputes.filter(d => d.status === 'resolved').length,
-        escalatedDisputes: disputes.filter(d => d.status === 'escalated').length,
-      })
-      setRecentActivity(disputes.slice(0, 5))
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const completedTrips = overview?.trips.byStatus.completed || 0
   const revenue = overview?.trips.revenue || 0

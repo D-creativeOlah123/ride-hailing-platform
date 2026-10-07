@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useGoogleLogin } from '@react-oauth/google'
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 import { Spinner } from './ui'
 import API from '../api'
@@ -72,5 +72,10 @@ export default function GoogleButton({ label = 'Google', onError, className = ''
       </button>
     )
   }
-  return <ActiveGoogleButton label={label} onError={onError} className={className} />
+  // The provider lives here (not at the app root) so Google's script only loads on pages with this button.
+  return (
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <ActiveGoogleButton label={label} onError={onError} className={className} />
+    </GoogleOAuthProvider>
+  )
 }

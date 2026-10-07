@@ -35,4 +35,6 @@ export const ThemeProvider = ({ children }) => {
   )
 }
 
+// The hook lives beside its provider on purpose; fast refresh will do a full reload for this file.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => useContext(ThemeContext)

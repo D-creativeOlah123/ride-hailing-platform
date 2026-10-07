@@ -8,20 +8,16 @@ export default function DriverDisputes() {
   const [disputes, setDisputes] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchDisputes = () =>
+    API.get('/disputes/mine')
+      .then(res => setDisputes(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+
   useEffect(() => {
     fetchDisputes()
   }, [])
-
-  const fetchDisputes = async () => {
-    try {
-      const res = await API.get('/disputes/mine')
-      setDisputes(res.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <AppShell

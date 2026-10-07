@@ -1,33 +1,42 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 
+// The landing page ships in the main bundle; every other page is loaded on demand.
 import LandingPage from './pages/LandingPage'
-import Login from './pages/auth/Login'
-import RegisterRider from './pages/auth/RegisterRider'
-import RegisterDriver from './pages/auth/RegisterDriver'
-import ForgotPassword from './pages/auth/ForgotPassword'
-import ResetPassword from './pages/auth/ResetPassword'
-import { Privacy, Terms } from './pages/Legal'
 
-import RiderDashboard from './pages/rider/Dashboard'
-import RiderActivity from './pages/rider/Activity'
-import RiderDisputes from './pages/rider/Disputes'
-import ActiveTrip from './pages/rider/ActiveTrip'
-import RiderAnalytics from './pages/rider/Analytics'
-import RiderSettings from './pages/rider/Settings'
+const Login = lazy(() => import('./pages/auth/Login'))
+const RegisterRider = lazy(() => import('./pages/auth/RegisterRider'))
+const RegisterDriver = lazy(() => import('./pages/auth/RegisterDriver'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+const Privacy = lazy(() => import('./pages/Legal').then(m => ({ default: m.Privacy })))
+const Terms = lazy(() => import('./pages/Legal').then(m => ({ default: m.Terms })))
+const RiderDashboard = lazy(() => import('./pages/rider/Dashboard'))
+const RiderActivity = lazy(() => import('./pages/rider/Activity'))
+const RiderDisputes = lazy(() => import('./pages/rider/Disputes'))
+const ActiveTrip = lazy(() => import('./pages/rider/ActiveTrip'))
+const RiderAnalytics = lazy(() => import('./pages/rider/Analytics'))
+const RiderSettings = lazy(() => import('./pages/rider/Settings'))
+const DriverDashboard = lazy(() => import('./pages/driver/Dashboard'))
+const DriverActivity = lazy(() => import('./pages/driver/Activity'))
+const DriverDisputes = lazy(() => import('./pages/driver/Disputes'))
+const DriverActiveTrip = lazy(() => import('./pages/driver/ActiveTrip'))
+const DriverAnalytics = lazy(() => import('./pages/driver/Analytics'))
+const DriverSettings = lazy(() => import('./pages/driver/Settings'))
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
+const AdminDisputes = lazy(() => import('./pages/admin/Disputes'))
+const AdminDrivers = lazy(() => import('./pages/admin/Drivers'))
+const AdminActivity = lazy(() => import('./pages/admin/Activity'))
+const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'))
 
-import DriverDashboard from './pages/driver/Dashboard'
-import DriverActivity from './pages/driver/Activity'
-import DriverDisputes from './pages/driver/Disputes'
-import DriverActiveTrip from './pages/driver/ActiveTrip'
-import DriverAnalytics from './pages/driver/Analytics'
-import DriverSettings from './pages/driver/Settings'
-
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminDisputes from './pages/admin/Disputes'
-import AdminDrivers from './pages/admin/Drivers'
-import AdminActivity from './pages/admin/Activity'
-import AdminAnalytics from './pages/admin/Analytics'
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-canvas" role="status" aria-label="Loading">
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+    </div>
+  )
+}
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth()
@@ -39,6 +48,7 @@ function ProtectedRoute({ children, roles }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
@@ -73,8 +83,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
-    
+      </Suspense>
     </BrowserRouter>
   )
 }

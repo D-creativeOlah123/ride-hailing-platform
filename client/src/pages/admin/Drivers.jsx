@@ -10,20 +10,16 @@ export default function AdminDrivers() {
   const [processing, setProcessing] = useState(null)
   const [success, setSuccess] = useState('')
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchDrivers = () =>
+    API.get('/auth/pending-drivers')
+      .then(res => setDrivers(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+
   useEffect(() => {
     fetchDrivers()
   }, [])
-
-  const fetchDrivers = async () => {
-    try {
-      const res = await API.get('/auth/pending-drivers')
-      setDrivers(res.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleApprove = async (id, approved) => {
     setProcessing(id)

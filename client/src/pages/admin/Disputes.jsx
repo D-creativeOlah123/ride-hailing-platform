@@ -31,20 +31,16 @@ export default function AdminDisputes() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchDisputes = () =>
+    API.get('/disputes/all')
+      .then(res => setDisputes(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+
   useEffect(() => {
     fetchDisputes()
   }, [])
-
-  const fetchDisputes = async () => {
-    try {
-      const res = await API.get('/disputes/all')
-      setDisputes(res.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleReview = async (id) => {
     try {

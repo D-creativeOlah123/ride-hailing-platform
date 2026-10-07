@@ -21,14 +21,14 @@
 
     --ink: 14 21 37;
     --ink-muted: 79 88 105;
-    --ink-subtle: 128 137 153;
+    --ink-subtle: 100 108 125; /* >= 4.5:1 on canvas, surface and surface-2 */
 
     --accent: 31 87 231;
     --accent-hover: 24 71 196;
     --accent-text: 29 79 216;
     --accent-soft: 234 240 254;
 
-    --success: 18 128 92;
+    --success: 15 116 83; /* >= 4.5:1 as badge text on success/10 */
     --warning: 178 94 9;
     --danger: 201 55 44;
 
@@ -51,10 +51,10 @@
 
     --ink: 237 240 245;
     --ink-muted: 154 163 180;
-    --ink-subtle: 104 113 130;
+    --ink-subtle: 128 137 154; /* >= 4.5:1 on surface, surface-2 and surface-3 */
 
-    --accent: 61 110 245;
-    --accent-hover: 85 128 247;
+    --accent: 56 102 236; /* white text on it >= 4.5:1 */
+    --accent-hover: 47 92 222;
     --accent-text: 122 155 255;
     --accent-soft: 20 30 56;
 

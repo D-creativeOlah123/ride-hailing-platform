@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Star, Phone, MessageSquare, Siren, TriangleAlert, Navigation, CheckCircle2, Flag, Play, MapPin,
@@ -42,22 +42,19 @@ export default function DriverActiveTrip() {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchTrip = useCallback(() =>
+    API.get(`/trips/${id}`)
+      .then(res => setTrip(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false)),
+  [id])
+
   useEffect(() => {
     fetchTrip()
     const interval = setInterval(fetchTrip, 5000)
     return () => clearInterval(interval)
-  }, [id])
-
-  const fetchTrip = async () => {
-    try {
-      const res = await API.get(`/trips/${id}`)
-      setTrip(res.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [fetchTrip])
 
   const updateStatus = async (status) => {
     setUpdating(true)

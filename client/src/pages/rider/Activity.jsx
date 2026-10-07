@@ -11,20 +11,16 @@ export default function RiderActivity() {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchTrips = () =>
+    API.get('/trips/history')
+      .then(res => setTrips(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+
   useEffect(() => {
     fetchTrips()
   }, [])
-
-  const fetchTrips = async () => {
-    try {
-      const res = await API.get('/trips/history')
-      setTrips(res.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const filtered = trips.filter(t => {
     if (filter === 'completed') return t.status === 'completed'

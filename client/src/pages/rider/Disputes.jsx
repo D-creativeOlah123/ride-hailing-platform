@@ -21,22 +21,21 @@ export default function RiderDisputes() {
   const [error, setError] = useState('')
   const [tab, setTab] = useState('submit')
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchData = () =>
+    Promise.all([
+      API.get('/trips/history'),
+      API.get('/disputes/mine')
+    ])
+      .then(([tripsRes, disputesRes]) => {
+        setTrips(tripsRes.data.filter(t => t.status === 'completed'))
+        setDisputes(disputesRes.data)
+      })
+      .catch(err => console.error(err))
+
   useEffect(() => {
     fetchData()
   }, [])
-
-  const fetchData = async () => {
-    try {
-      const [tripsRes, disputesRes] = await Promise.all([
-        API.get('/trips/history'),
-        API.get('/disputes/mine')
-      ])
-      setTrips(tripsRes.data.filter(t => t.status === 'completed'))
-      setDisputes(disputesRes.data)
-    } catch (err) {
-      console.error(err)
-    }
-  }
 
   const handleSubmit = async () => {
     if (!form.tripId || !form.description) return

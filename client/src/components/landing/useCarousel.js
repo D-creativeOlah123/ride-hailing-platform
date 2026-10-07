@@ -28,8 +28,9 @@ export function useReducedMotion() {
  */
 export function useCarousel({ count, interval = 6000, autoplay = true }) {
   // previous = the slide being left, so it can keep its end state while fading out
-  const [state, setState] = useState({ index: 0, previous: null })
-  const { index, previous } = state
+  // highest = furthest slide reached, so callers can lazily mount slides as they come up
+  const [state, setState] = useState({ index: 0, previous: null, highest: 0 })
+  const { index, previous, highest } = state
   const [hovered, setHovered] = useState(false)
   const [controlFocused, setControlFocused] = useState(false)
   const [userPaused, setUserPaused] = useState(false)
@@ -40,7 +41,7 @@ export function useCarousel({ count, interval = 6000, autoplay = true }) {
 
   const move = useCallback((fn) => setState(s => {
     const target = ((fn(s.index) % count) + count) % count
-    return target === s.index ? s : { index: target, previous: s.index }
+    return target === s.index ? s : { index: target, previous: s.index, highest: Math.max(s.highest, target) }
   }), [count])
 
   // The autoplay tick (kept in a ref so the interval never needs recreating for it)
@@ -103,6 +104,7 @@ export function useCarousel({ count, interval = 6000, autoplay = true }) {
   return {
     index,
     previous,
+    highest,
     goTo,
     next,
     prev,

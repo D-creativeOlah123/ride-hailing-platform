@@ -19,10 +19,13 @@ export default function AppShell({ title, subtitle, actions, children }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
 
-  // Close the drawer on navigation.
-  useEffect(() => {
+  // Close the drawer on navigation. Adjusting state during render (rather than
+  // in an effect) is React's recommended way to reset state when an input changes.
+  const [lastPathname, setLastPathname] = useState(location.pathname)
+  if (lastPathname !== location.pathname) {
+    setLastPathname(location.pathname)
     setMenuOpen(false)
-  }, [location.pathname])
+  }
 
   // Escape closes the drawer; lock page scroll while it is open.
   useEffect(() => {

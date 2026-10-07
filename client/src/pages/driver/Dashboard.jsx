@@ -37,27 +37,25 @@ export default function DriverDashboard() {
   const [accepting, setAccepting] = useState(null)
   const prevTripCount = useRef(0)
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchAvailableTrips = () =>
+    API.get('/trips/available')
+      .then(res => {
+        const newTrips = res.data
+        if (prevTripCount.current > 0 && newTrips.length > prevTripCount.current) {
+          beep()
+        }
+        prevTripCount.current = newTrips.length
+        setTrips(newTrips)
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+
   useEffect(() => {
     fetchAvailableTrips()
     const interval = setInterval(fetchAvailableTrips, 8000)
     return () => clearInterval(interval)
   }, [])
-
-  const fetchAvailableTrips = async () => {
-    try {
-      const res = await API.get('/trips/available')
-      const newTrips = res.data
-      if (prevTripCount.current > 0 && newTrips.length > prevTripCount.current) {
-        beep()
-      }
-      prevTripCount.current = newTrips.length
-      setTrips(newTrips)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleAccept = async (tripId) => {
     setAccepting(tripId)

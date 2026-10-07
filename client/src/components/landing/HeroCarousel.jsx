@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play, Star } from 'lucide-react'
 import Photo from './Photo'
@@ -13,11 +14,22 @@ const FOCAL_CLASSES =
 
 export default function HeroCarousel() {
   const reduced = useReducedMotion()
-  const { index, previous, goTo, next, prev, paused, userPaused, toggleUserPaused, bind, hoverProps, controlProps, resetKey } = useCarousel({
+  const { index, previous, highest, goTo, next, prev, paused, userPaused, toggleUserPaused, bind, hoverProps, controlProps, resetKey } = useCarousel({
     count: heroSlides.length,
     interval: INTERVAL,
   })
   const slide = heroSlides[index]
+
+  // Only slide 1 loads up front (it's the LCP image). The next slide's photo is fetched once
+  // the page has finished loading, so the hidden slides don't compete for bandwidth.
+  const [pageLoaded, setPageLoaded] = useState(() => document.readyState === 'complete')
+  useEffect(() => {
+    if (pageLoaded) return
+    const onLoad = () => setPageLoaded(true)
+    window.addEventListener('load', onLoad)
+    return () => window.removeEventListener('load', onLoad)
+  }, [pageLoaded])
+  const shouldMount = (i) => i <= highest || (pageLoaded && i <= highest + 1)
 
   return (
     <>
@@ -43,13 +55,15 @@ export default function HeroCarousel() {
                 className={`absolute inset-0 transition-opacity duration-[900ms] ease-brand motion-reduce:transition-none ${active ? 'opacity-100' : 'opacity-0'}`}
               >
                 {/* Re-adding the animation class restarts the zoom; the slide being left keeps its end scale while it fades */}
-                <Photo
-                  image={s.image}
-                  priority={i === 0}
-                  sizes="100vw"
-                  style={{ '--focal-m': s.focal.mobile, '--focal-d': s.focal.desktop }}
-                  className={`h-full w-full object-cover ${FOCAL_CLASSES} ${reduced ? '' : active ? 'animate-ken-burns' : i === previous ? 'scale-[1.08]' : ''}`}
-                />
+                {shouldMount(i) && (
+                  <Photo
+                    image={s.image}
+                    priority={i === 0}
+                    sizes="100vw"
+                    style={{ '--focal-m': s.focal.mobile, '--focal-d': s.focal.desktop }}
+                    className={`h-full w-full object-cover ${FOCAL_CLASSES} ${reduced ? '' : active ? 'animate-ken-burns' : i === previous ? 'scale-[1.08]' : ''}`}
+                  />
+                )}
               </div>
             )
           })}
@@ -114,16 +128,19 @@ export default function HeroCarousel() {
                     aria-label={`Slide ${i + 1}: ${s.headline}`}
                     onClick={() => goTo(i)}
                     {...controlProps}
-                    className={`relative h-1.5 overflow-hidden rounded-full transition-all duration-300 ease-brand ${active ? 'w-10 bg-white/30' : 'w-4 bg-white/45 hover:bg-white/75'}`}
+                    className="group/dot flex h-6 items-center"
                   >
-                    {active && (
-                      <span
-                        // The interval restarts after a pause or manual navigation, so the bar restarts too
-                        key={`bar-${index}-${paused}-${resetKey}`}
-                        className={`absolute inset-0 origin-left rounded-full bg-white ${reduced ? '' : 'animate-progress'}`}
-                        style={reduced ? undefined : { animationDuration: `${INTERVAL}ms`, animationPlayState: paused ? 'paused' : 'running' }}
-                      />
-                    )}
+                    {/* Thin bar inside a 24px-tall hit area */}
+                    <span className={`relative block h-1.5 overflow-hidden rounded-full transition-all duration-300 ease-brand ${active ? 'w-10 bg-white/30' : 'w-4 bg-white/45 group-hover/dot:bg-white/75'}`}>
+                      {active && (
+                        <span
+                          // The interval restarts after a pause or manual navigation, so the bar restarts too
+                          key={`bar-${index}-${paused}-${resetKey}`}
+                          className={`absolute inset-0 origin-left rounded-full bg-white ${reduced ? '' : 'animate-progress'}`}
+                          style={reduced ? undefined : { animationDuration: `${INTERVAL}ms`, animationPlayState: paused ? 'paused' : 'running' }}
+                        />
+                      )}
+                    </span>
                   </button>
                 )
               })}

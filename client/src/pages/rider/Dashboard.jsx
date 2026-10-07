@@ -15,25 +15,21 @@ export default function RiderDashboard() {
   const [pickup, setPickup] = useState('')
   const [destination, setDestination] = useState('')
   const [recentTrips, setRecentTrips] = useState([])
-  const [loading, setLoading] = useState(false)
+  // Starts true: the trips are fetched on mount.
+  const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(false)
   const [bookingStep, setBookingStep] = useState(0)
+
+  // Promise chain so state is only set in async callbacks.
+  const fetchRecentTrips = () =>
+    API.get('/trips/history')
+      .then(res => setRecentTrips(res.data.slice(0, 5)))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
 
   useEffect(() => {
     fetchRecentTrips()
   }, [])
-
-  const fetchRecentTrips = async () => {
-    setLoading(true)
-    try {
-      const res = await API.get('/trips/history')
-      setRecentTrips(res.data.slice(0, 5))
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleBookRide = async () => {
     if (!pickup || !destination) return

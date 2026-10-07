@@ -31,11 +31,11 @@ export default function TrustBar() {
           {companies.map((c, i) => <li key={c}><Wordmark name={c} i={i} /></li>)}
         </ul>
 
-        {/* Mobile/tablet: marquee (static, scrollable row when reduced motion is on) */}
-        <div className="relative w-full overflow-hidden lg:hidden [mask-image:linear-gradient(to_right,transparent,#000_12%,#000_88%,transparent)]">
-          <ul className="flex w-max gap-10 pr-10 motion-safe:animate-marquee motion-reduce:w-full motion-reduce:overflow-x-auto">
+        {/* Mobile/tablet: marquee; with reduced motion, a static wrapped row (duplicates hidden) */}
+        <div className="relative w-full overflow-hidden lg:hidden motion-safe:[mask-image:linear-gradient(to_right,transparent,#000_12%,#000_88%,transparent)]">
+          <ul className="flex w-max gap-10 pr-10 motion-safe:animate-marquee motion-reduce:w-full motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-x-8 motion-reduce:gap-y-3 motion-reduce:pr-0">
             {[...companies, ...companies].map((c, i) => (
-              <li key={i} aria-hidden={i >= companies.length}><Wordmark name={c} i={i} /></li>
+              <li key={i} aria-hidden={i >= companies.length} className={i >= companies.length ? 'motion-reduce:hidden' : undefined}><Wordmark name={c} i={i} /></li>
             ))}
           </ul>
         </div>

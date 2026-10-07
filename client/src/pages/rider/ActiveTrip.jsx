@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   X, Share2, Star, MessageSquare, Phone, Search, Check, MapPin, CornerUpRight, Clock, Wallet,
@@ -39,22 +39,19 @@ export default function ActiveTrip() {
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
 
+  // Promise chain so state is only set in async callbacks.
+  const fetchTrip = useCallback(() =>
+    API.get(`/trips/${id}`)
+      .then(res => setTrip(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false)),
+  [id])
+
   useEffect(() => {
     fetchTrip()
     const interval = setInterval(fetchTrip, 5000)
     return () => clearInterval(interval)
-  }, [id])
-
-  const fetchTrip = async () => {
-    try {
-      const res = await API.get(`/trips/${id}`)
-      setTrip(res.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [fetchTrip])
 
   const handleCancel = async () => {
     setCancelling(true)
