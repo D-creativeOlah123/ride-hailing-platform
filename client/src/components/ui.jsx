@@ -108,6 +108,17 @@ export function Skeleton({ className = 'h-14' }) {
   return <div className={`animate-pulse rounded-lg bg-surface-2 ${className}`} />
 }
 
+/**
+ * Payment state of a trip. Only meaningful for completed trips; renders nothing otherwise.
+ * payment: trip.payment ({ status: unpaid | pending | paid, method })
+ */
+export function PaymentBadge({ trip, className = '' }) {
+  if (!trip || trip.status !== 'completed') return null
+  const status = trip.payment?.status || 'unpaid'
+  if (status === 'paid') return <span className={`badge badge-success ${className}`}>Paid</span>
+  return <span className={`badge badge-warning ${className}`}>Awaiting payment</span>
+}
+
 /** Small neutral label for features that aren't available yet. */
 export function ComingSoon({ className = '' }) {
   return <span className={`badge badge-neutral whitespace-nowrap text-[11px] ${className}`}>Coming soon</span>

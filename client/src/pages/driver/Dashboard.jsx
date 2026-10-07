@@ -2,14 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Wallet, CalendarDays, CarFront, PowerOff, User, Phone, History, Flag, Settings, ChevronRight, Check,
-  BarChart3, ArrowRight,
+  BarChart3, ArrowRight, Route as RouteIcon,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
-import { SectionHeader, EmptyState, Skeleton, Spinner, StatusBadge } from '../../components/ui'
+import { SectionHeader, EmptyState, Skeleton, Spinner, StatusBadge, PaymentBadge } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
 import API from '../../api'
 import beep from '../../utils/sound'
 import { naira, tripSummary } from '../../utils/tripStats'
+import { rideTypeLabel, formatDistance, formatDuration } from '../../components/payments/paystack'
 
 const ACTIVE_STATUSES = ['requested', 'accepted', 'driver_arriving', 'trip_started']
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
@@ -266,6 +267,9 @@ export default function DriverDashboard() {
                         <div className="shrink-0 text-right">
                           <p className="text-base font-semibold text-ink tabular-nums">{trip.fare ? `₦${trip.fare.toLocaleString()}` : '—'}</p>
                           <p className="text-xs text-ink-subtle">Est. fare</p>
+                          {rideTypeLabel(trip.rideType) && (
+                            <span className="badge badge-neutral mt-2">{rideTypeLabel(trip.rideType)}</span>
+                          )}
                         </div>
                       </div>
 
@@ -279,6 +283,13 @@ export default function DriverDashboard() {
                             <Phone className="h-3.5 w-3.5 shrink-0 text-ink-subtle" strokeWidth={1.75} />
                             {trip.rider?.phone}
                           </span>
+                          {formatDistance(trip.distanceKm) && (
+                            <span className="flex items-center gap-1.5 tabular-nums">
+                              <RouteIcon className="h-3.5 w-3.5 shrink-0 text-ink-subtle" strokeWidth={1.75} />
+                              {formatDistance(trip.distanceKm)}
+                              {formatDuration(trip.duration) && ` · ~${formatDuration(trip.duration)}`}
+                            </span>
+                          )}
                         </div>
                         <button
                           onClick={() => handleAccept(trip._id)}
@@ -344,7 +355,10 @@ export default function DriverDashboard() {
                         {trip.status === 'completed' && trip.fare
                           ? <span className="text-sm font-semibold text-ink tabular-nums">{naira(trip.fare)}</span>
                           : null}
-                        <StatusBadge status={trip.status} />
+                        {/* Completed trips show their payment state ("Paid" / "Awaiting payment") instead */}
+                        {trip.status === 'completed'
+                          ? <PaymentBadge trip={trip} />
+                          : <StatusBadge status={trip.status} />}
                       </div>
                       {active && <ChevronRight className="h-4 w-4 shrink-0 text-accent-text transition-transform group-hover:translate-x-0.5" />}
                     </>

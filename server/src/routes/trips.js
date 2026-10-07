@@ -3,6 +3,7 @@ const router = express.Router()
 const Trip = require('../models/Trip')
 const Message = require('../models/Message')
 const { protect, authorize } = require('../middleware/auth')
+const { PLACES, RIDE_TYPES, estimate, timeComparison } = require('../utils/pricing')
 
 const CHAT_OPEN = ['accepted', 'driver_arriving', 'trip_started']
 
@@ -16,18 +17,51 @@ async function tripParticipant(req, res) {
     return { trip, role }
 }
 
+// Known Lagos places for pickup/destination autocomplete (public)
+router.get('/places', (req, res) => {
+    res.json(PLACES.map(p => ({ name: p.name, area: p.area, aliases: p.aliases || [] })))
+})
+
+// Fare estimate before booking: every ride type now, plus prices at other times (public)
+router.post('/estimate', (req, res) => {
+    const { pickupLocation, destination } = req.body
+    const quote = estimate(pickupLocation, destination)
+    if (!quote) return res.status(400).json({ message: 'Choose your pickup and destination from the list of Lagos locations' })
+    if (quote.pickup === quote.destination) return res.status(400).json({ message: 'Pickup and destination must be different' })
+    res.json({ ...quote, byTime: timeComparison(pickupLocation, destination) })
+})
+
 // Rider requests a trip
 router.post('/request', protect, authorize('rider'), async (req, res) => {
     try {
-        const { pickupLocation, destination } = req.body
+        const { pickupLocation, destination, rideType = 'economy' } = req.body
+        if (!RIDE_TYPES[rideType]) return res.status(400).json({ message: 'Unknown ride type' })
 
+        // The fare is computed here (never trusted from the client) and fixed for the trip
+        const quote = estimate(pickupLocation, destination)
+        if (!quote) return res.status(400).json({ message: 'Choose your pickup and destination from the list of Lagos locations' })
+        if (quote.pickup === quote.destination) return res.status(400).json({ message: 'Pickup and destination must be different' })
+
+        const option = quote.options.find(o => o.type === rideType)
+        // If the rider was shown a different price (e.g. rush-hour pricing started since), don't
+        // silently charge the new one: send the fresh quote back so they can confirm it.
+        const shown = Number(req.body.expectedFare)
+        if (req.body.expectedFare !== undefined && shown !== option.fare) {
+            return res.status(409).json({
+                message: `The price has changed to ₦${option.fare.toLocaleString('en-NG')} (${quote.period.label.toLowerCase()} pricing). Tap Book again to confirm.`,
+                estimate: { ...quote, byTime: timeComparison(pickupLocation, destination) },
+            })
+        }
         const trip = new Trip({
             rider: req.user.id,
-            pickupLocation,
-            destination,
+            pickupLocation: quote.pickup,
+            destination: quote.destination,
             status: 'requested',
-            // Fare is fixed when the ride is requested so rider and driver see the same amount
-            fare: Math.floor(Math.random() * 3000) + 500
+            rideType,
+            fare: option.fare,
+            distanceKm: quote.distanceKm,
+            duration: quote.durationMin,
+            pricePeriod: quote.period.label
         })
 
         await trip.save()

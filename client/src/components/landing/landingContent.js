@@ -132,7 +132,7 @@ export const forRiders = {
   benefits: [
     { icon: 'Zap', title: 'Pickup in minutes', body: 'Average pickup under 3 minutes in Lekki, VI and Ikeja.' },
     { icon: 'ShieldCheck', title: 'Verified drivers', body: 'Every driver is ID-checked, background-screened and rated after each trip.' },
-    { icon: 'Wallet', title: 'Upfront ₦ fares', body: 'See the price before you book. Pay with cash, card or bank transfer.' },
+    { icon: 'Wallet', title: 'Upfront ₦ fares', body: 'See the price before you book. Pay after the trip by card, transfer or USSD.' },
     { icon: 'Headset', title: 'Support 24/7', body: 'Real people on call day and night — in English, Yoruba, Igbo or Hausa.' },
   ],
 }
@@ -146,7 +146,7 @@ export const howItWorks = {
   steps: [
     { title: 'Set your destination', body: 'Enter where you’re going and see your fare in ₦ before you confirm.', image: photo('hero-03-booking-phone', 'Rider entering a destination on her phone') },
     { title: 'Meet your driver', body: 'We match you with the nearest verified driver. Track them to your door.', image: photo('pickup', 'Rider waiting at the pickup point on a busy street') },
-    { title: 'Arrive and go', body: 'Pay in the app or in cash, rate your trip, and get on with your day.', image: photo('dropoff', 'Rider stepping out of a car at the destination') },
+    { title: 'Arrive and go', body: 'Pay in the app by card, transfer or USSD, rate your trip, and get on with your day.', image: photo('dropoff', 'Rider stepping out of a car at the destination') },
   ],
 }
 
@@ -234,7 +234,7 @@ export const testimonials = [
 // ---------------------------------------------------------------------------
 export const faq = [
   { q: 'How is my fare calculated?', a: 'Fares are based on distance and estimated time, and you see the full price in ₦ before you book. There’s no haggling and no surprise surcharges at the end of the trip.' },
-  { q: 'How can I pay?', a: 'Pay with cash, a debit or credit card, or a bank transfer. Card and transfer payments are confirmed in the app, and you get a receipt for every trip.' },
+  { q: 'How can I pay?', a: 'Pay in the app once your trip ends, with a debit or credit card, a bank transfer or USSD, securely processed by Paystack. RideLink is cashless, and you get a receipt for every trip.' },
   { q: 'Can I cancel a ride?', a: 'Yes. Cancelling is free until a driver is on the way. After that, a small fee may apply to compensate the driver for their time.' },
   { q: 'How do you keep riders safe?', a: 'Every driver is ID-verified and background-checked, every trip is tracked by GPS, and you can share your live trip or press the in-app emergency button at any time.' },
   { q: 'What do I need to drive with RideLink?', a: 'A valid Nigerian driver’s licence, a car in good condition (2008 or newer), vehicle papers and insurance, and a smartphone. Sign up online and our team will review your documents.' },

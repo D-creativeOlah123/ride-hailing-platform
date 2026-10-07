@@ -6,8 +6,9 @@ import {
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import BarChart from '../../components/BarChart'
-import { StatCard, StatusBadge, SectionHeader, EmptyState, Skeleton, Avatar } from '../../components/ui'
+import { StatCard, StatusBadge, PaymentBadge, SectionHeader, EmptyState, Skeleton, Avatar } from '../../components/ui'
 import { naira, tripSummary, monthlySeries, monthOverMonth } from '../../utils/tripStats'
+import { tripMetaLine } from '../../components/payments/paystack'
 import API from '../../api'
 
 const ACTIVE_STATUSES = ['requested', 'accepted', 'driver_arriving', 'trip_started']
@@ -39,6 +40,7 @@ function TripRow({ trip, onOpen }) {
   const active = isActive(trip)
   const riderName = trip.rider?.name || 'Rider'
   const note = cancelNote(trip)
+  const meta = tripMetaLine(trip)
   const fare = trip.status === 'completed' && trip.fare
     ? naira(trip.fare)
     : <span className="font-normal text-ink-subtle" aria-label="No fare">—</span>
@@ -63,6 +65,7 @@ function TripRow({ trip, onOpen }) {
         <div className="mt-3 flex min-w-0 items-center gap-2.5">
           <Avatar name={riderName} className="h-7 w-7 text-[11px]" />
           <span className="min-w-0 truncate text-sm font-medium text-ink">{riderName}</span>
+          {meta && <span className="shrink-0 text-xs text-ink-subtle">· {meta}</span>}
         </div>
         <div className="relative mt-3 space-y-2">
           <span className="pointer-events-none absolute left-[3.5px] top-[9px] h-[calc(100%-18px)] w-px bg-line-strong" aria-hidden="true" />
@@ -78,7 +81,10 @@ function TripRow({ trip, onOpen }) {
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
-          <span className="text-[15px] font-semibold text-ink tabular-nums">{fare}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="text-[15px] font-semibold text-ink tabular-nums">{fare}</span>
+            <PaymentBadge trip={trip} />
+          </span>
           {openHint || (note && <span className="text-xs text-ink-subtle">{note}</span>)}
         </div>
       </div>
@@ -92,7 +98,10 @@ function TripRow({ trip, onOpen }) {
         <div className="flex min-w-0 items-center gap-3">
           <Avatar name={riderName} className="h-8 w-8 text-xs" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-ink">{riderName}</p>
+            <p className="truncate text-sm font-medium text-ink">
+              {riderName}
+              {meta && <span className="font-normal text-ink-subtle"> · {meta}</span>}
+            </p>
             <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-ink-muted" title={`${trip.pickupLocation} → ${trip.destination}`}>
               <span className="min-w-0 truncate">{trip.pickupLocation}</span>
               <ArrowRight className="h-3 w-3 shrink-0 text-ink-subtle" strokeWidth={2} aria-label="to" />
@@ -101,9 +110,10 @@ function TripRow({ trip, onOpen }) {
           </div>
         </div>
         <p className="text-right text-sm font-semibold text-ink tabular-nums">{fare}</p>
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col items-start gap-1">
           <StatusBadge status={trip.status} />
-          {note && <p className="mt-1 truncate text-xs text-ink-subtle">{note}</p>}
+          <PaymentBadge trip={trip} />
+          {note && <p className="max-w-full truncate text-xs text-ink-subtle">{note}</p>}
         </div>
         <span className="flex justify-end text-accent-text">
           {active && <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} aria-hidden="true" />}
@@ -122,6 +132,16 @@ function TripRow({ trip, onOpen }) {
           onClick={() => onOpen(trip._id)}
           aria-label={`Open active trip with ${riderName}, ${trip.pickupLocation} to ${trip.destination}`}
           className={`group ${layout} bg-accent-soft/40 transition-colors hover:bg-accent-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent`}
+        >
+          {content}
+        </button>
+      ) : trip.status === 'completed' ? (
+        // Completed trips open too, so the driver can check the rider's payment
+        <button
+          type="button"
+          onClick={() => onOpen(trip._id)}
+          aria-label={`Open completed trip with ${riderName}, ${trip.pickupLocation} to ${trip.destination}`}
+          className={`group ${layout} transition-colors hover:bg-surface-2/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent`}
         >
           {content}
         </button>

@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Search, CarFront, RefreshCw } from 'lucide-react'
 import AppShell from '../../components/AppShell'
-import { StatusBadge, EmptyState, Skeleton, Avatar } from '../../components/ui'
+import { StatusBadge, PaymentBadge, EmptyState, Skeleton, Avatar } from '../../components/ui'
 import API from '../../api'
+import { rideTypeLabel } from '../../components/payments/paystack'
+
+/** Paid / Awaiting payment for completed trips, a dash otherwise. */
+function Payment({ trip }) {
+  if (trip.status !== 'completed') return <span className="text-ink-subtle" aria-label="Not applicable">—</span>
+  return <PaymentBadge trip={trip} />
+}
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -162,8 +169,16 @@ export default function AdminActivity() {
                       <Person person={trip.driver} role="Driver" />
                     </div>
                   </div>
-                  {trip.fare != null && (
-                    <p className="text-sm font-semibold text-ink tabular-nums">₦{trip.fare.toLocaleString()}</p>
+                  {(trip.fare != null || trip.status === 'completed') && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {trip.fare != null && (
+                        <p className="text-sm font-semibold text-ink tabular-nums">₦{trip.fare.toLocaleString()}</p>
+                      )}
+                      {rideTypeLabel(trip.rideType) && (
+                        <span className="text-xs text-ink-subtle">{rideTypeLabel(trip.rideType)}</span>
+                      )}
+                      <PaymentBadge trip={trip} />
+                    </div>
                   )}
                 </li>
               ))}
@@ -171,7 +186,7 @@ export default function AdminActivity() {
 
             {/* md and up: table */}
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[760px] text-sm">
+              <table className="w-full min-w-[880px] text-sm">
                 <thead>
                   <tr className="table-head">
                     <th className="px-5 py-3 font-medium">Date</th>
@@ -180,6 +195,7 @@ export default function AdminActivity() {
                     <th className="px-5 py-3 font-medium">Driver</th>
                     <th className="px-5 py-3 text-right font-medium">Fare</th>
                     <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 font-medium">Payment</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,8 +207,12 @@ export default function AdminActivity() {
                       <td className="max-w-[180px] px-5 py-3.5"><Person person={trip.driver} role="Driver" /></td>
                       <td className="whitespace-nowrap px-5 py-3.5 text-right font-medium text-ink tabular-nums">
                         {trip.fare != null ? `₦${trip.fare.toLocaleString()}` : '—'}
+                        {rideTypeLabel(trip.rideType) && (
+                          <span className="block text-xs font-normal text-ink-subtle">{rideTypeLabel(trip.rideType)}</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5"><StatusBadge status={trip.status} /></td>
+                      <td className="whitespace-nowrap px-5 py-3.5"><Payment trip={trip} /></td>
                     </tr>
                   ))}
                 </tbody>

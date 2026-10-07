@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Phone, MessageSquare, Siren, TriangleAlert, Navigation, CheckCircle2, Flag, Play, MapPin, ExternalLink,
+  Phone, MessageSquare, Siren, TriangleAlert, Navigation, CheckCircle2, Flag, Play, MapPin, ExternalLink, Clock,
 } from 'lucide-react'
 import AppShell from '../../components/AppShell'
 import { Avatar, Spinner, StatusBadge, ComingSoon } from '../../components/ui'
 import { TripChatPanel, UnreadBadge } from '../../components/TripChat'
 import { useTripChat } from '../../components/useTripChat'
 import API from '../../api'
+import { naira } from '../../utils/tripStats'
+import { paymentMethodLabel, tripMetaLine } from '../../components/payments/paystack'
 
 // Decorative route illustration (street grid + route line). Not a live map.
 function RouteMap() {
@@ -77,10 +79,8 @@ export default function DriverActiveTrip() {
     setUpdating(true)
     try {
       await API.patch(`/trips/${id}/status`, { status })
+      // Stay on the page after completing so the driver can see when the rider pays
       fetchTrip()
-      if (status === 'completed') {
-        setTimeout(() => navigate('/driver/dashboard'), 2000)
-      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -254,8 +254,28 @@ export default function DriverActiveTrip() {
                   </span>
                   <p className="text-base font-semibold text-ink">Trip Completed!</p>
                   <p className="mt-1 text-sm text-ink-muted">
-                    You earned <span className="font-medium text-ink tabular-nums">₦{trip.fare}</span>
+                    You earned <span className="font-medium text-ink tabular-nums">{naira(trip.fare)}</span>
                   </p>
+                  {tripMetaLine(trip, { duration: true }) && (
+                    <p className="mt-0.5 text-xs text-ink-subtle">{tripMetaLine(trip, { duration: true })}</p>
+                  )}
+                  {trip.payment?.status === 'paid' ? (
+                    <div className="alert alert-success mt-4 w-full max-w-sm text-left" role="status">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <span>
+                        Rider has paid <span className="font-semibold tabular-nums">{naira(trip.payment.amount || trip.fare)}</span>
+                        {trip.payment.method && <> by {paymentMethodLabel(trip.payment.method)}</>}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="alert mt-4 w-full max-w-sm border-warning/20 bg-warning/[0.07] text-left text-warning" role="status">
+                      <Clock className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <span>
+                        Awaiting rider’s payment <span className="font-semibold tabular-nums">{naira(trip.fare)}</span>
+                        <span className="mt-0.5 block text-xs text-ink-muted">The rider pays in the app by card, transfer or USSD. This updates automatically.</span>
+                      </span>
+                    </div>
+                  )}
                   <button onClick={() => navigate('/driver/dashboard')}
                     className="btn btn-primary mt-5 w-full sm:w-auto">
                     Back to Dashboard

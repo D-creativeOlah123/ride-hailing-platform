@@ -1,10 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { CarFront, TrendingUp, TrendingDown, Minus, Flag } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { CarFront, TrendingUp, TrendingDown, Minus, Flag, CreditCard } from 'lucide-react'
 import AppShell from '../../components/AppShell'
-import { StatusBadge, SectionHeader, EmptyState, Skeleton } from '../../components/ui'
+import { StatusBadge, PaymentBadge, SectionHeader, EmptyState, Skeleton } from '../../components/ui'
 import API from '../../api'
 import { naira, tripSummary, monthlySeries, monthOverMonth } from '../../utils/tripStats'
+import { tripMetaLine } from '../../components/payments/paystack'
+
+const isUnpaid = (t) => t.status === 'completed' && t.payment?.status !== 'paid'
+
+const FILTERS = [
+  { key: 'all', label: 'All', match: () => true },
+  { key: 'completed', label: 'Completed', match: t => t.status === 'completed' },
+  { key: 'unpaid', label: 'Awaiting payment', match: isUnpaid },
+  { key: 'cancelled', label: 'Cancelled', match: t => t.status === 'cancelled' },
+]
 
 export default function RiderActivity() {
   const [trips, setTrips] = useState([])
@@ -24,11 +34,9 @@ export default function RiderActivity() {
     fetchTrips()
   }, [fetchTrips])
 
-  const filtered = trips.filter(t => {
-    if (filter === 'completed') return t.status === 'completed'
-    if (filter === 'cancelled') return t.status === 'cancelled'
-    return true
-  })
+  const filtered = trips.filter(FILTERS.find(f => f.key === filter).match)
+  const unpaidTrips = trips.filter(isUnpaid)
+  const unpaidAmount = unpaidTrips.reduce((sum, t) => sum + (t.fare || 0), 0)
 
   const summary = tripSummary(trips)
   const series = monthlySeries(trips, 6)
@@ -39,18 +47,21 @@ export default function RiderActivity() {
 
   const filterControl = (
     <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-surface-2 p-1" role="tablist" aria-label="Filter trips">
-      {['all', 'completed', 'cancelled'].map(f => (
-        <button key={f}
+      {FILTERS.map(f => (
+        <button key={f.key}
           type="button"
           role="tab"
-          aria-selected={filter === f}
-          onClick={() => setFilter(f)}
-          className={`h-8 shrink-0 rounded-md px-3 text-[13px] font-medium capitalize transition-colors ${
-            filter === f
+          aria-selected={filter === f.key}
+          onClick={() => setFilter(f.key)}
+          className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition-colors ${
+            filter === f.key
               ? 'bg-surface text-ink shadow-xs ring-1 ring-line'
               : 'text-ink-muted hover:text-ink'
           }`}>
-          {f}
+          {f.label}
+          {f.key === 'unpaid' && !loading && unpaidTrips.length > 0 && (
+            <span className="rounded bg-warning/15 px-1 text-[11px] tabular-nums text-warning">{unpaidTrips.length}</span>
+          )}
         </button>
       ))}
     </div>
@@ -71,7 +82,11 @@ export default function RiderActivity() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="card">
-              <EmptyState icon={CarFront} title="No trips found." />
+              <EmptyState
+                icon={CarFront}
+                title={filter === 'unpaid' ? 'You’re all paid up.' : 'No trips found.'}
+                description={filter === 'unpaid' ? 'Completed trips you still need to pay for will show up here.' : undefined}
+              />
             </div>
           ) : (
             <ul className="card divide-y divide-line overflow-hidden">
@@ -81,8 +96,12 @@ export default function RiderActivity() {
                     <p className="min-w-0 truncate text-xs text-ink-subtle tabular-nums">
                       {new Date(trip.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} •{' '}
                       {new Date(trip.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {tripMetaLine(trip) && <> • {tripMetaLine(trip)}</>}
                     </p>
-                    <StatusBadge status={trip.status} className="shrink-0" />
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                      <StatusBadge status={trip.status} />
+                      <PaymentBadge trip={trip} className="hidden sm:inline-flex" />
+                    </div>
                   </div>
 
                   <div className="relative mt-3 space-y-2.5">
@@ -99,18 +118,29 @@ export default function RiderActivity() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="text-[15px] font-semibold text-ink tabular-nums">
-                      {trip.fare ? naira(trip.fare) : '—'}
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="text-[15px] font-semibold text-ink tabular-nums">
+                        {trip.fare ? naira(trip.fare) : '—'}
+                      </span>
+                      <PaymentBadge trip={trip} className="sm:hidden" />
                     </span>
                     {trip.status === 'completed' && (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/rider/disputes')}
-                        className="btn btn-secondary btn-sm">
-                        <Flag className="h-3.5 w-3.5" strokeWidth={1.75} />
-                        Dispute
-                      </button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigate('/rider/disputes')}
+                          className="btn btn-secondary btn-sm">
+                          <Flag className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          Dispute
+                        </button>
+                        {isUnpaid(trip) && (
+                          <Link to={`/rider/trip/${trip._id}`} className="btn btn-primary btn-sm">
+                            <CreditCard className="h-3.5 w-3.5" strokeWidth={1.75} />
+                            Pay
+                          </Link>
+                        )}
+                      </div>
                     )}
                   </div>
                 </li>
@@ -166,7 +196,23 @@ export default function RiderActivity() {
                 <dt className="text-ink-muted">Cancelled</dt>
                 <dd className="font-medium text-danger tabular-nums">{summary.cancelled}</dd>
               </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-ink-muted">Awaiting payment</dt>
+                <dd className={`font-medium tabular-nums ${unpaidTrips.length ? 'text-warning' : 'text-ink'}`}>
+                  {unpaidTrips.length}
+                  {unpaidTrips.length > 0 && <span className="font-normal text-ink-muted"> · {naira(unpaidAmount)}</span>}
+                </dd>
+              </div>
             </dl>
+            {unpaidTrips.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilter('unpaid')}
+                className="btn btn-secondary btn-sm mt-4 w-full">
+                <CreditCard className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Show trips to pay
+              </button>
+            )}
           </section>
         </div>
       </div>

@@ -14,10 +14,13 @@ const authRoutes = require('./routes/auth')
 const tripRoutes = require('./routes/trips')
 const disputeRoutes = require('./routes/disputes')
 const adminRoutes = require('./routes/admin')
+const paymentRoutes = require('./routes/payments')
 
 const app = express()
 
 app.use(cors())
+// Paystack webhook needs the raw body to check its signature, so it skips JSON parsing
+app.use('/api/payments/webhook', express.raw({ type: '*/*' }))
 app.use(express.json())
 
 mongoose.connect(process.env.MONGO_URI)
@@ -28,6 +31,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/trips', tripRoutes)
 app.use('/api/disputes', disputeRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/payments', paymentRoutes)
 
 app.get('/', (req, res) => {
     res.json({ message: 'Ride-hailing API is running!' })
